@@ -1,0 +1,24 @@
+services:
+  backend:
+    build:
+      context: ./services/backend
+      args:
+        FRONTEND_URL: ${FRONTEND_URL}
+    environment:
+      - FRONTEND_URL=${FRONTEND_URL}
+      - NODE_ENV=${NODE_ENV}
+    ports:
+      - "8010:3000"
+
+  frontend:
+    build:
+      context: ./services/frontend
+      args:
+        NEXT_PUBLIC_BACKEND_URL: ${BACKEND_URL}
+    environment:
+      - NEXT_PUBLIC_BACKEND_URL=${BACKEND_URL}
+      - NODE_ENV=${NODE_ENV}
+    ports:
+      - "8011:3000"
+    depends_on:
+      - backend

@@ -1,0 +1,29 @@
+.statsblock {
+  flex-grow: 1;
+}
+
+.statsBlocks {
+  display: flex;
+  gap: 20px;
+  margin-top: 50px;
+}
+
+.points {
+  font-size: 2em;
+}
+
+.name {
+  font-size: 1.2em;
+}
+
+.green {
+  color: green;
+}
+
+.red {
+  color: red;
+}
+
+.dashboard {
+  width: 100%;
+}

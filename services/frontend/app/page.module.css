@@ -1,0 +1,26 @@
+.welcome {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  width: fit-content;
+  gap: 20px;
+  align-items: center;
+}
+
+.form hr {
+  width: 60%;
+}
+
+.joinForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}

@@ -1,0 +1,104 @@
+.cards {
+  display: flex;
+  flex-direction: row;
+  gap: 50px;
+  margin-top: 15px;
+}
+
+.card {
+  display: grid;
+  grid-template-rows: 40px;
+  justify-items: center;
+}
+
+.colors {
+  display: grid;
+  grid-template-columns: 50px 50px;
+  gap: 10px;
+}
+
+.color {
+  width: 50px;
+  height: 50px;
+  border-radius: 100%;
+}
+
+.color:hover {
+  transform: scale(1.02);
+  box-shadow: 0 0 0 2px rgb(243, 243, 243), 0 0px 50px rgba(255, 255, 255, 0.5);
+}
+
+.color.selected {
+  box-shadow: 0 0 0 2px rgb(243, 243, 243), 0 0px 50px rgba(255, 255, 255, 0.5);
+}
+
+.red {
+  background-color: var(--wizard-red);
+}
+
+.blue {
+  background-color: var(--wizard-blue);
+}
+
+.yellow {
+  background-color: var(--wizard-yellow);
+}
+
+.green {
+  background-color: var(--wizard-green);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: 1.1em;
+}
+
+.button {
+  width: fit-content;
+  margin-bottom: 20px;
+}
+
+.input {
+  width: 100%;
+}
+
+.page {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  margin-top: 30px;
+}
+
+.pagecontent {
+  width: 300px;
+}
+
+.buttonbox {
+  display: flex;
+  justify-content: space-between;
+}
+
+.playerbox {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.playerbox > p {
+  font-size: var(--font-size-medium);
+}
+
+.playersbox {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.warning {
+  border-color: rgb(255, 83, 83);
+  color: rgb(255, 83, 83);
+}

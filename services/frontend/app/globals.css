@@ -1,0 +1,92 @@
+/* Custom emoji font-family to standardize appearance across platforms
+ https://www.client9.com/css-color-emoji-stack/
+ https://nolanlawson.com/2022/04/08/the-struggle-of-using-native-emoji-on-the-web/ */
+@font-face {
+  font-family: "color-emoji";
+  src: local("Apple Color Emoji"), local("Twemoji Mozilla"),
+    local("Segoe UI Emoji"), local("Segoe UI Symbol"), local("Noto Color Emoji"),
+    local("EmojiOne Color"), local("Android Emoji");
+}
+
+:root {
+  --padding-normal: 5px;
+  --font-size-normal: 1em;
+  --font-size-medium: 1.2em;
+  --font-size-large: 1.5em;
+  --padding-button-normal: 10px 15px 10px 15px;
+  --padding-input-normal: 10px 10px 10px 10px;
+
+  --background-color: black;
+  --background-color-2: #4a4a4a;
+  --background-color-3: rgba(255, 255, 255, 0.08);
+
+  --border-color: gray;
+
+  --color: rgb(255, 255, 255);
+  --color-2: rgb(185, 185, 185);
+  --special: rgb(115, 126, 252);
+  --default-font-family: -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif,
+    color-emoji;
+
+  --wizard-red: #c34b3b;
+  --wizard-blue: #89c1e7;
+  --wizard-yellow: #ecd336;
+  --wizard-green: #a2bd53;
+}
+
+html {
+  width: 100%;
+}
+
+body {
+  width: 100%;
+  background-color: var(--background-color);
+  color: var(--color);
+}
+
+.main {
+  width: 100%;
+  padding: 30px;
+}
+
+input {
+  padding: var(--padding-input-normal);
+
+  background-color: var(--background-color-2);
+
+  border-radius: 3px;
+  border: none;
+  outline: none;
+  border: 1px var(--border-color) solid;
+
+  font-size: var(--font-size-normal);
+  color: var(--color-2);
+}
+
+button {
+  padding: var(--padding-button-normal);
+
+  font-size: var(--font-size-normal);
+  background-color: var(--background-color);
+  color: var(--color);
+  outline: none;
+  border: none;
+  border: 1px rgb(154, 154, 154) solid;
+  border-radius: 3px;
+  width: 100%;
+
+  &:hover {
+    background-color: var(--background-color-3);
+    cursor: pointer;
+  }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  -webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
+  -moz-box-sizing: border-box; /* Firefox, other Gecko */
+  box-sizing: border-box; /* Opera/IE 8+ */
+
+  /* border: 1px red solid; */
+}

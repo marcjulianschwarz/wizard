@@ -1,0 +1,55 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+
+  justify-content: center;
+  width: 70%;
+  margin: 0 auto;
+}
+
+.color {
+  border-radius: 500px;
+  width: 40px;
+  height: 40px;
+  background-color: #b1f2ba;
+  border: 3px rgba(197, 170, 170, 0.712) solid;
+}
+
+.colorContainer {
+  width: 200px;
+  display: flex;
+  justify-content: center;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.nameRow {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+
+.addBtn {
+  width: fit-content;
+}
+
+.nameInput {
+  width: 200px;
+}
+
+.players {
+  display: flex;
+  flex-direction: row;
+  gap: 20px;
+}
+
+.player {
+  display: flex;
+  flex-direction: row;
+  gap: 5px;
+}
