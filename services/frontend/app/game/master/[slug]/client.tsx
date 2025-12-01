@@ -6,7 +6,8 @@ import { useSocket } from "@/app/api/hooks";
 import { useState } from "react";
 import RoundInfo from "@/app/components/RoundInfo/RoundInfo";
 import { currentPoints } from "@/app/api/utils";
-import CopyToClipboard from "@/app/components/CopyToClipboard/CopyToClipboard";
+import GameCodeDisplay from "@/app/components/GameCodeDisplay/GameCodeDisplay";
+import ColorButton from "@/app/components/ColorButton/ColorButton";
 
 function TrumpCardSelection(props: {
   handleColorClick: (color: string, card: string) => void;
@@ -20,67 +21,51 @@ function TrumpCardSelection(props: {
           <div className={styles.card}>
             <p className={styles.title}>Trumpf</p>
             <div className={styles.colors}>
-              <div
-                className={`${styles.color} ${styles.green} ${
-                  props.selectedTrump === "greentrump" ? styles.selected : ""
-                }`}
+              <ColorButton
+                color="green"
+                selected={props.selectedTrump === "greentrump"}
                 onClick={() => props.handleColorClick("green", "trump")}
-              ></div>
-              <div
-                className={`${styles.color} ${styles.blue} ${
-                  props.selectedTrump === "bluetrump" ? styles.selected : ""
-                }`}
+              />
+              <ColorButton
+                color="blue"
+                selected={props.selectedTrump === "bluetrump"}
                 onClick={() => props.handleColorClick("blue", "trump")}
-              ></div>
-              <div
-                className={`${styles.color} ${styles.red} ${
-                  props.selectedTrump === "redtrump" ? styles.selected : ""
-                }`}
+              />
+              <ColorButton
+                color="red"
+                selected={props.selectedTrump === "redtrump"}
                 onClick={() => props.handleColorClick("red", "trump")}
-              ></div>
-              <div
-                className={`${styles.color} ${styles.yellow} ${
-                  props.selectedTrump === "yellowtrump" ? styles.selected : ""
-                }`}
+              />
+              <ColorButton
+                color="yellow"
+                selected={props.selectedTrump === "yellowtrump"}
                 onClick={() => props.handleColorClick("yellow", "trump")}
-              ></div>
+              />
             </div>
           </div>
           <div className={styles.card}>
             <p className={styles.title}>Bedienung</p>
             <div className={styles.colors}>
-              <div
-                className={`${styles.color} ${styles.green} ${
-                  props.selectedConstraint === "greenconstraint"
-                    ? styles.selected
-                    : ""
-                }`}
+              <ColorButton
+                color="green"
+                selected={props.selectedConstraint === "greenconstraint"}
                 onClick={() => props.handleColorClick("green", "constraint")}
-              ></div>
-              <div
-                className={`${styles.color} ${styles.blue} ${
-                  props.selectedConstraint === "blueconstraint"
-                    ? styles.selected
-                    : ""
-                }`}
+              />
+              <ColorButton
+                color="blue"
+                selected={props.selectedConstraint === "blueconstraint"}
                 onClick={() => props.handleColorClick("blue", "constraint")}
-              ></div>
-              <div
-                className={`${styles.color} ${styles.red} ${
-                  props.selectedConstraint === "redconstraint"
-                    ? styles.selected
-                    : ""
-                }`}
+              />
+              <ColorButton
+                color="red"
+                selected={props.selectedConstraint === "redconstraint"}
                 onClick={() => props.handleColorClick("red", "constraint")}
-              ></div>
-              <div
-                className={`${styles.color} ${styles.yellow} ${
-                  props.selectedConstraint === "yellowconstraint"
-                    ? styles.selected
-                    : ""
-                }`}
+              />
+              <ColorButton
+                color="yellow"
+                selected={props.selectedConstraint === "yellowconstraint"}
                 onClick={() => props.handleColorClick("yellow", "constraint")}
-              ></div>
+              />
             </div>
           </div>
         </div>
@@ -282,23 +267,7 @@ export default function ClientMaster(props: { slug: string }) {
     <div>
       <RoundInfo game={game} />
       <br />
-      <div className={styles.joinCodeBox}>
-        <div className={styles.codeInfo}>
-          <label className={styles.joinCodeLabel}>Beitrittscode:</label>
-          <span className={styles.codeValue}>{game.joinCode}</span>
-        </div>
-        <div className={styles.codeActions}>
-          <CopyToClipboard text={game.joinCode} />
-          <button
-            onClick={() =>
-              window.open(`/game/dashboard/${game.joinCode}`, "_blank")
-            }
-            className={styles.dashboardBtn}
-          >
-            Dashboard öffnen
-          </button>
-        </div>
-      </div>
+      <GameCodeDisplay code={game.joinCode} showDashboardLink={true} />
       <div className={styles.page}>
         <div className={styles.pagecontent}>
           {pages[currentPage]}

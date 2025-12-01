@@ -34,9 +34,21 @@
     font-weight: bold;
 }
 
+.playerHeader {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.playerEmoji {
+    font-size: 2em;
+    line-height: 1;
+}
+
 .name {
     font-size: 1.2em;
-    margin-bottom: 10px;
+    margin: 0;
 }
 
 .green {
@@ -62,10 +74,86 @@
     gap: 40px;
 }
 
+.winnerHeader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.winnerEmoji {
+    font-size: 5em;
+    line-height: 1;
+    margin-top: 20px;
+    animation: bounce 1s ease-in-out infinite;
+}
+
+@keyframes bounce {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
 .winnerTitle {
     font-size: 3em;
     text-align: center;
     font-weight: normal;
+    color: var(--wizard-green);
+    margin: 0;
+}
+
+.playerScores {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
+    max-width: 500px;
+}
+
+.scoreRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: var(--background-color-3);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+
+.scoreRow:hover {
+    transform: translateX(5px);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.scoreRow:first-child {
+    border-color: var(--wizard-green);
+    background-color: rgba(162, 189, 83, 0.1);
+}
+
+.scorePlayer {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.scoreEmoji {
+    font-size: 1.8em;
+    line-height: 1;
+}
+
+.scoreName {
+    font-size: 1.2em;
+    font-weight: 500;
+}
+
+.scorePoints {
+    font-size: 1.3em;
+    font-weight: bold;
     color: var(--wizard-green);
 }
 

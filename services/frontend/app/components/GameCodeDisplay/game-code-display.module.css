@@ -1,0 +1,52 @@
+.joinCodeBox {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+    background-color: var(--background-color-3);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.codeInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.joinCodeLabel {
+    font-size: 0.9em;
+    color: var(--color-2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.codeValue {
+    font-size: 1.8em;
+    font-weight: bold;
+    font-family: monospace;
+    color: var(--special);
+    letter-spacing: 2px;
+}
+
+.codeActions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.codeActions button {
+    flex: 1;
+    min-width: 150px;
+}
+
+.dashboardBtn {
+    background-color: var(--background-color-2);
+    border-color: var(--special);
+    color: var(--special);
+}
+
+.dashboardBtn:hover {
+    background-color: rgba(115, 126, 252, 0.1);
+}

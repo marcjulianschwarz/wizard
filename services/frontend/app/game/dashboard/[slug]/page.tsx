@@ -9,7 +9,6 @@ import { useSocket } from "@/app/api/hooks";
 import RoundInfo from "@/app/components/RoundInfo/RoundInfo";
 import dynamic from "next/dynamic";
 import { currentPoints, lineChartPointsValues } from "@/app/api/utils";
-import SimpleBarChart from "@/app/components/SimpleBarChart/SimpleBarChart";
 import Image from "next/image";
 
 function StatsBlock(props: {
@@ -31,7 +30,10 @@ function StatsBlock(props: {
 
   return (
     <div className={styles.statsblock}>
-      <p className={styles.name}>{playerState.player.name}</p>
+      <div className={styles.playerHeader}>
+        <span className={styles.playerEmoji}>{playerState.player.color}</span>
+        <p className={styles.name}>{playerState.player.name}</p>
+      </div>
       {points ? (
         <div>
           <span className={styles.points}>{points}</span>
@@ -83,17 +85,36 @@ function FinalPage(props: { game: Game }) {
     );
   });
 
+  const winner = game.state.playerStates.find(
+    (ps) => ps.player.name === getPlayerWithMostPoints(game),
+  );
+
   return (
     <div className={styles.finalPage}>
-      <h1 className={styles.winnerTitle}>
-        {getPlayerWithMostPoints(game)} hat gewonnen!
-      </h1>
+      <div className={styles.winnerHeader}>
+        {winner && (
+          <span className={styles.winnerEmoji}>{winner.player.color}</span>
+        )}
+        <h1 className={styles.winnerTitle}>
+          {getPlayerWithMostPoints(game)} hat gewonnen!
+        </h1>
+      </div>
 
       <div className={styles.finalContent}>
-        <SimpleBarChart
-          numbers={scores}
-          labels={game.state.playerStates.map((s) => s.player.name)}
-        />
+        <div className={styles.playerScores}>
+          {game.state.playerStates
+            .map((ps, idx) => ({ ps, score: scores[idx] }))
+            .sort((a, b) => b.score - a.score)
+            .map(({ ps, score }) => (
+              <div key={ps.player.name} className={styles.scoreRow}>
+                <div className={styles.scorePlayer}>
+                  <span className={styles.scoreEmoji}>{ps.player.color}</span>
+                  <span className={styles.scoreName}>{ps.player.name}</span>
+                </div>
+                <span className={styles.scorePoints}>{score} pkt</span>
+              </div>
+            ))}
+        </div>
         <Image
           src="/IwAZ6dvvvaTtdI8SD5.webp"
           alt="Celebration"

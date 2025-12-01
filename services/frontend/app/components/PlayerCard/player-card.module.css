@@ -1,0 +1,56 @@
+.player {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background-color: var(--background-color-3);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.player:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    transform: translateX(5px);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.playerInfo {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.playerEmoji {
+    font-size: 2em;
+    line-height: 1;
+}
+
+.playerName {
+    font-size: 1.1em;
+    font-weight: 500;
+}
+
+.removeBtn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgb(255, 83, 83);
+    border-color: rgb(255, 83, 83);
+    background-color: transparent;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.removeBtn:hover {
+    background-color: rgba(255, 83, 83, 0.15);
+    transform: scale(1.05);
+}
+
+.removeBtn svg {
+    stroke-width: 2.5;
+}

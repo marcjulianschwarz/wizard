@@ -2,6 +2,7 @@
 import { useState } from "react";
 import styles from "./page.module.css";
 import { useRouter } from "next/navigation";
+import Hero from "./components/Hero/Hero";
 
 export default function Home() {
   const [joinCode, setJoinCode] = useState("");
@@ -25,10 +26,7 @@ export default function Home() {
 
   return (
     <main className={styles.welcome}>
-      <div className={styles.hero}>
-        <h1 className={styles.title}>Wizard</h1>
-        <p className={styles.tagline}>Das magische Kartenspiel</p>
-      </div>
+      <Hero title="Wizard" subtitle="" />
 
       <div className={styles.container}>
         <div className={styles.card}>

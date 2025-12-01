@@ -4,26 +4,8 @@ import styles from "./page.module.css";
 import { Game, Player, PlayerState } from "@/app/api/entities";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/app/api/hooks";
-import { X } from "lucide-react";
-
-const EMOJI_OPTIONS = [
-  "🧙‍♂️",
-  "🧙‍♀️",
-  "🎩",
-  "⚡",
-  "🔮",
-  "✨",
-  "🌟",
-  "🎯",
-  "🎲",
-  "🃏",
-  "👑",
-  "🦄",
-  "🐉",
-  "🦊",
-  "🐺",
-  "🦁",
-];
+import EmojiPicker, { EMOJI_OPTIONS } from "@/app/components/EmojiPicker/EmojiPicker";
+import PlayerCard from "@/app/components/PlayerCard/PlayerCard";
 
 function getRandomEmoji(): string {
   return EMOJI_OPTIONS[Math.floor(Math.random() * EMOJI_OPTIONS.length)];
@@ -135,13 +117,15 @@ export default function Page() {
 
       <div className={styles.form}>
         <div className={styles.inputGroup}>
-          <button
-            className={styles.emojiButton}
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            type="button"
-          >
-            {selectedEmoji}
-          </button>
+          <EmojiPicker
+            selectedEmoji={selectedEmoji}
+            onSelect={(emoji) => {
+              setSelectedEmoji(emoji);
+              setShowEmojiPicker(false);
+            }}
+            onToggle={() => setShowEmojiPicker(!showEmojiPicker)}
+            isOpen={showEmojiPicker}
+          />
           <input
             ref={inputRef}
             className={styles.nameInput}
@@ -155,26 +139,6 @@ export default function Page() {
           </button>
         </div>
 
-        {showEmojiPicker && (
-          <div className={styles.emojiPicker}>
-            {EMOJI_OPTIONS.map((emoji) => (
-              <button
-                key={emoji}
-                className={`${styles.emojiOption} ${
-                  selectedEmoji === emoji ? styles.selected : ""
-                }`}
-                onClick={() => {
-                  setSelectedEmoji(emoji);
-                  setShowEmojiPicker(false);
-                }}
-                type="button"
-              >
-                {emoji}
-              </button>
-            ))}
-          </div>
-        )}
-
         {error && <p className={styles.error}>{error}</p>}
       </div>
 
@@ -183,19 +147,11 @@ export default function Page() {
           <h2>Spieler ({players.length})</h2>
           <div className={styles.players}>
             {players.map((player) => (
-              <div className={styles.player} key={player.name}>
-                <div className={styles.playerInfo}>
-                  <span className={styles.playerEmoji}>{player.color}</span>
-                  <span className={styles.playerName}>{player.name}</span>
-                </div>
-                <button
-                  className={styles.removeBtn}
-                  onClick={() => handleRemovePlayer(player.name)}
-                  aria-label={`${player.name} entfernen`}
-                >
-                  <X size={18} />
-                </button>
-              </div>
+              <PlayerCard
+                key={player.name}
+                player={player}
+                onRemove={handleRemovePlayer}
+              />
             ))}
           </div>
         </div>
