@@ -22,10 +22,61 @@
 @media (max-width: 768px) {
     .statsBlocks {
         flex-direction: column;
+        margin-top: 30px;
     }
 
     .statsblock {
         width: 100%;
+    }
+
+    .playerEmoji {
+        font-size: 1.8em;
+    }
+
+    .name {
+        font-size: 1.1em;
+    }
+
+    .points {
+        font-size: 1.8em;
+    }
+
+    .winnerEmoji {
+        font-size: 4em;
+        margin-top: 10px;
+    }
+
+    .winnerTitle {
+        font-size: 2em;
+    }
+
+    .finalPage {
+        padding: 15px;
+    }
+
+    .playerScores {
+        max-width: 100%;
+    }
+
+    .scoreRow {
+        padding: 12px 15px;
+    }
+
+    .scoreEmoji {
+        font-size: 1.5em;
+    }
+
+    .scoreName {
+        font-size: 1.1em;
+    }
+
+    .scorePoints {
+        font-size: 1.2em;
+    }
+
+    .celebrationImage {
+        width: 100%;
+        height: auto;
     }
 }
 

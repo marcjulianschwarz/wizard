@@ -138,20 +138,47 @@
     transform: scale(1.02);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+    .welcome {
+        margin: 0;
+        padding: 8vh 20px 20px;
+        min-height: auto;
+        max-height: none;
+    }
+
     .title {
         font-size: 2.5em;
     }
 
     .card {
-        padding: 25px;
-    }
-
-    .welcome {
-        padding-top: 8vh;
+        padding: 20px;
     }
 
     .hero {
-        margin-bottom: 40px;
+        margin-bottom: 25px;
+    }
+
+    .container {
+        padding: 0 0 10px;
+        gap: 20px;
+        max-width: 100%;
+    }
+
+    .card h2 {
+        font-size: 1.3em;
+    }
+
+    .description {
+        font-size: 0.9em;
+    }
+
+    .createBtn,
+    .joinBtn {
+        padding: 12px 20px;
+        font-size: 1em;
+    }
+
+    .divider {
+        margin: 8px 0;
     }
 }

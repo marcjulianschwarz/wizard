@@ -43,3 +43,28 @@
 .green {
     background-color: var(--wizard-green);
 }
+
+@media (max-width: 768px) {
+    .container {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .round {
+        font-size: 1.5em;
+    }
+
+    .time {
+        font-size: 0.9em;
+    }
+
+    .colors {
+        flex-direction: row;
+        gap: 10px;
+    }
+
+    .colors > p {
+        padding: 4px 12px;
+        font-size: 0.9em;
+    }
+}

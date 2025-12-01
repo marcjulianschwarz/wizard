@@ -168,3 +168,51 @@
     font-size: 1.2em;
     color: var(--color-2);
 }
+
+@media (max-width: 768px) {
+    .cards {
+        flex-direction: column;
+        gap: 30px;
+        margin-top: 10px;
+    }
+
+    .colors {
+        grid-template-columns: repeat(2, 50px);
+    }
+
+    .pagecontent {
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .buttonbox {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    .button {
+        width: 100%;
+    }
+
+    .playerbox > p {
+        font-size: 1.1em;
+    }
+
+    .joinCodeBox {
+        padding: 15px;
+    }
+
+    .codeValue {
+        font-size: 1.5em;
+        word-break: break-all;
+    }
+
+    .codeActions {
+        flex-direction: column;
+    }
+
+    .codeActions button {
+        width: 100%;
+        min-width: unset;
+    }
+}

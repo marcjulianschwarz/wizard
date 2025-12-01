@@ -50,3 +50,24 @@
 .dashboardBtn:hover {
     background-color: rgba(115, 126, 252, 0.1);
 }
+
+@media (max-width: 768px) {
+    .joinCodeBox {
+        padding: 15px;
+    }
+
+    .codeValue {
+        font-size: 1.4em;
+        letter-spacing: 1px;
+        word-break: break-all;
+    }
+
+    .codeActions {
+        flex-direction: column;
+    }
+
+    .codeActions button {
+        width: 100%;
+        min-width: unset;
+    }
+}

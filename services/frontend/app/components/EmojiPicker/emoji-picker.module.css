@@ -70,3 +70,20 @@
     border-color: var(--special);
     background-color: rgba(115, 126, 252, 0.1);
 }
+
+@media (max-width: 768px) {
+    .emojiButton {
+        font-size: 1.8em;
+    }
+
+    .emojiPicker {
+        grid-template-columns: repeat(6, 1fr);
+        padding: 12px;
+        gap: 6px;
+    }
+
+    .emojiOption {
+        font-size: 1.5em;
+        padding: 6px;
+    }
+}
