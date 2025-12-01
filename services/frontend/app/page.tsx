@@ -17,26 +17,51 @@ export default function Home() {
     router.push(link);
   }
 
+  function handleKeyPress(e: React.KeyboardEvent) {
+    if (e.key === "Enter" && joinCode.trim()) {
+      handleJoinGame();
+    }
+  }
+
   return (
     <main className={styles.welcome}>
-      <h1>Wizard</h1>
-      <br />
-      <br />
+      <div className={styles.hero}>
+        <h1 className={styles.title}>Wizard</h1>
+        <p className={styles.tagline}>Das magische Kartenspiel</p>
+      </div>
 
-      <div className={styles.form}>
-        <button onClick={handleCreateGame} className={styles.create}>
-          Neues Spiel
-        </button>
-        <hr />
-        <div className={styles.joinForm}>
-          <input
-            value={joinCode}
-            onChange={(e) => setJoinCode(e.target.value)}
-            placeholder="Game Code"
-          />
-          <button onClick={handleJoinGame} className={styles.join}>
-            Spiel beitreten
+      <div className={styles.container}>
+        <div className={styles.card}>
+          <h2>Neues Spiel starten</h2>
+          <p className={styles.description}>
+            Erstelle ein neues Spiel und lade deine Freunde ein
+          </p>
+          <button onClick={handleCreateGame} className={styles.createBtn}>
+            Neues Spiel erstellen
           </button>
+        </div>
+
+        <div className={styles.divider}>
+          <span>oder</span>
+        </div>
+
+        <div className={styles.card}>
+          <h2>Spiel beitreten</h2>
+          <p className={styles.description}>
+            Tritt einem bestehenden Spiel mit einem Code bei
+          </p>
+          <div className={styles.joinForm}>
+            <input
+              value={joinCode}
+              onChange={(e) => setJoinCode(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Spiel-Code eingeben"
+              className={styles.joinInput}
+            />
+            <button onClick={handleJoinGame} className={styles.joinBtn}>
+              Beitreten
+            </button>
+          </div>
         </div>
       </div>
     </main>

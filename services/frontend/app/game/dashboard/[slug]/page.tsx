@@ -2,7 +2,7 @@
 import { Game, PlayerState } from "@/app/api/entities";
 const SimpleLineChart = dynamic(
   () => import("../../../components/SimpleLineChart/SimpleLineChart"),
-  { ssr: false }
+  { ssr: false },
 );
 import styles from "./page.module.css";
 import { useSocket } from "@/app/api/hooks";
@@ -26,7 +26,7 @@ function StatsBlock(props: {
 
   const points = currentPoints(
     playerState.points.predicted,
-    playerState.points.actual
+    playerState.points.actual,
   );
 
   return (
@@ -65,7 +65,7 @@ function FinalPage(props: { game: Game }) {
     for (const playerState of game.state.playerStates) {
       const points = currentPoints(
         playerState.points.predicted,
-        playerState.points.actual
+        playerState.points.actual,
       );
       if (points > maxPoints) {
         maxPoints = points;
@@ -79,35 +79,29 @@ function FinalPage(props: { game: Game }) {
   const scores = game.state.playerStates.map((playerState) => {
     return currentPoints(
       playerState.points.predicted,
-      playerState.points.actual
+      playerState.points.actual,
     );
   });
 
   return (
-    <div>
-      <h1 style={{ textAlign: "center", fontSize: "3em" }}>
-        Du hast gewonnen {getPlayerWithMostPoints(game)} 🎉
+    <div className={styles.finalPage}>
+      <h1 className={styles.winnerTitle}>
+        {getPlayerWithMostPoints(game)} hat gewonnen!
       </h1>
-      <br />
-      <br />
 
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 40,
-        }}
-      >
+      <div className={styles.finalContent}>
         <SimpleBarChart
           numbers={scores}
           labels={game.state.playerStates.map((s) => s.player.name)}
         />
-        <Image src="/IwAZ6dvvvaTtdI8SD5.webp" alt="" width={500} height={400} />
+        <Image
+          src="/IwAZ6dvvvaTtdI8SD5.webp"
+          alt="Celebration"
+          width={500}
+          height={400}
+          className={styles.celebrationImage}
+        />
       </div>
-      {/* <br />
-      <br />
-      <button style={{ width: "fit-content" }}>Fertig</button> */}
     </div>
   );
 }
@@ -116,12 +110,16 @@ export default function Page({ params }: { params: { slug: string } }) {
   const { game } = useSocket(params.slug);
 
   if (!game) {
-    return <p>Loading</p>;
+    return (
+      <div className={styles.loading}>
+        <p>Lade Spieldaten...</p>
+      </div>
+    );
   }
 
   // Calculate global min and max
   const numbers = game.state.playerStates.map((playerState) =>
-    lineChartPointsValues(playerState, game.state.currentRound)
+    lineChartPointsValues(playerState, game.state.currentRound),
   );
   const allNumbers = numbers.flat();
   const globalMin = Math.min(...allNumbers);

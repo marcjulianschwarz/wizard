@@ -1,29 +1,93 @@
 .statsblock {
-  flex-grow: 1;
+    flex-grow: 1;
+    padding: 15px;
+    background-color: var(--background-color-3);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    transition: transform 0.2s;
+}
+
+.statsblock:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .statsBlocks {
-  display: flex;
-  gap: 20px;
-  margin-top: 50px;
+    display: flex;
+    gap: 20px;
+    margin-top: 50px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .statsBlocks {
+        flex-direction: column;
+    }
+
+    .statsblock {
+        width: 100%;
+    }
 }
 
 .points {
-  font-size: 2em;
+    font-size: 2em;
+    font-weight: bold;
 }
 
 .name {
-  font-size: 1.2em;
+    font-size: 1.2em;
+    margin-bottom: 10px;
 }
 
 .green {
-  color: green;
+    color: var(--wizard-green);
+    font-weight: bold;
 }
 
 .red {
-  color: red;
+    color: var(--wizard-red);
+    font-weight: bold;
 }
 
 .dashboard {
-  width: 100%;
+    width: 100%;
+}
+
+.finalPage {
+    width: 100%;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+}
+
+.winnerTitle {
+    font-size: 3em;
+    text-align: center;
+    font-weight: normal;
+    color: var(--wizard-green);
+}
+
+.finalContent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    width: 100%;
+    max-width: 800px;
+}
+
+.celebrationImage {
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+    font-size: 1.2em;
+    color: var(--color-2);
 }

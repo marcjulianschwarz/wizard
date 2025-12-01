@@ -1,26 +1,157 @@
 .welcome {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-items: center;
-  width: 100%;
+    min-height: calc(100vh - 60px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 8vh;
+    width: 100%;
+    margin: -30px;
+    padding-left: 30px;
+    padding-right: 30px;
 }
 
-.form {
-  display: flex;
-  flex-direction: column;
-  width: fit-content;
-  gap: 20px;
-  align-items: center;
+.hero {
+    text-align: center;
+    margin-bottom: 50px;
+    flex-shrink: 0;
 }
 
-.form hr {
-  width: 60%;
+.title {
+    font-size: 3.5em;
+    font-weight: bold;
+    color: var(--wizard-blue);
+    margin-bottom: 15px;
+}
+
+.tagline {
+    font-size: 1.3em;
+    color: var(--color-2);
+    font-weight: 300;
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    max-width: 500px;
+    width: 100%;
+    padding: 0 20px 30px;
+    flex-shrink: 0;
+}
+
+.card {
+    background-color: var(--background-color-3);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transition: all 0.3s;
+}
+
+.card:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.card h2 {
+    font-size: 1.5em;
+    font-weight: 500;
+    margin: 0;
+}
+
+.description {
+    color: var(--color-2);
+    margin: 0;
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+
+.createBtn {
+    padding: 15px 25px;
+    font-size: 1.1em;
+    background-color: var(--wizard-green);
+    border: none;
+    color: black;
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.createBtn:hover {
+    transform: scale(1.02);
+    background-color: #b3d164;
+    box-shadow: 0 4px 20px rgba(162, 189, 83, 0.3);
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    color: var(--color-2);
+    margin: 10px 0;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--border-color);
+}
+
+.divider span {
+    padding: 0 20px;
+    font-size: 0.9em;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 .joinForm {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.joinInput {
+    width: 100%;
+    font-size: 1.05em;
+    text-align: center;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.joinBtn {
+    padding: 15px 25px;
+    font-size: 1.1em;
+    background-color: var(--background-color-2);
+    border-color: var(--special);
+    color: var(--special);
+    font-weight: 600;
+    transition: all 0.3s;
+}
+
+.joinBtn:hover {
+    background-color: rgba(115, 126, 252, 0.1);
+    transform: scale(1.02);
+}
+
+@media (max-width: 600px) {
+    .title {
+        font-size: 2.5em;
+    }
+
+    .card {
+        padding: 25px;
+    }
+
+    .welcome {
+        padding-top: 8vh;
+    }
+
+    .hero {
+        margin-bottom: 40px;
+    }
 }

@@ -1,9 +1,33 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import styles from "./page.module.css";
 import { Game, Player, PlayerState } from "@/app/api/entities";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/app/api/hooks";
+import { X } from "lucide-react";
+
+const EMOJI_OPTIONS = [
+  "🧙‍♂️",
+  "🧙‍♀️",
+  "🎩",
+  "⚡",
+  "🔮",
+  "✨",
+  "🌟",
+  "🎯",
+  "🎲",
+  "🃏",
+  "👑",
+  "🦄",
+  "🐉",
+  "🦊",
+  "🐺",
+  "🦁",
+];
+
+function getRandomEmoji(): string {
+  return EMOJI_OPTIONS[Math.floor(Math.random() * EMOJI_OPTIONS.length)];
+}
 
 // function ColorInput() {
 //   return <div className={styles.color}></div>;
@@ -22,23 +46,55 @@ function generateRandomString(length: number): string {
 export default function Page() {
   const [playerName, setPlayerName] = useState("");
   const [players, setPlayers] = useState<Player[]>([]);
+  const [error, setError] = useState("");
+  const [selectedEmoji, setSelectedEmoji] = useState(getRandomEmoji());
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const code = generateRandomString(8);
   const router = useRouter();
   const { createGame } = useSocket();
 
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
   function handleAddPlayer() {
+    if (!playerName.trim()) {
+      setError("Bitte gib einen Spielernamen ein");
+      return;
+    }
     const foundPlayer = players.find((pl) => pl.name === playerName);
     if (foundPlayer) {
+      setError("Dieser Spieler existiert bereits");
       return;
     }
     const newPlayers: Player[] = [
       ...players,
-      { name: playerName, color: "red" },
+      { name: playerName, color: selectedEmoji },
     ];
     setPlayers(newPlayers);
+    setPlayerName("");
+    setError("");
+    setShowEmojiPicker(false);
+    setSelectedEmoji(getRandomEmoji());
+    inputRef.current?.focus();
+  }
+
+  function handleRemovePlayer(playerName: string) {
+    setPlayers(players.filter((p) => p.name !== playerName));
+  }
+
+  function handleKeyPress(e: React.KeyboardEvent) {
+    if (e.key === "Enter") {
+      handleAddPlayer();
+    }
   }
 
   async function handleCreateGame() {
+    if (players.length < 2) {
+      setError("Du brauchst mindestens 2 Spieler");
+      return;
+    }
     console.log(code);
     const game: Game = {
       name: "",
@@ -64,37 +120,94 @@ export default function Page() {
       router.push(`/game/master/${code}`);
     } catch (error) {
       console.error("Failed to create game:", error);
+      setError("Fehler beim Erstellen des Spiels");
     }
   }
 
   return (
     <div className={styles.page}>
-      <h1>Spieler hinzufügen</h1>
+      <div className={styles.header}>
+        <h1>Neues Spiel erstellen</h1>
+        <p className={styles.subtitle}>
+          Füge mindestens 2 Spieler hinzu um zu starten
+        </p>
+      </div>
+
       <div className={styles.form}>
-        <div className={styles.nameRow}>
+        <div className={styles.inputGroup}>
+          <button
+            className={styles.emojiButton}
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            type="button"
+          >
+            {selectedEmoji}
+          </button>
           <input
+            ref={inputRef}
             className={styles.nameInput}
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
+            onKeyPress={handleKeyPress}
             placeholder="Spielername"
           />
           <button className={styles.addBtn} onClick={handleAddPlayer}>
-            +
+            Hinzufügen
           </button>
         </div>
-      </div>
 
-      <div className={styles.players}>
-        {players.map((player) => (
-          <div className={styles.player} key={player.name}>
-            <p>{player.name}</p>
+        {showEmojiPicker && (
+          <div className={styles.emojiPicker}>
+            {EMOJI_OPTIONS.map((emoji) => (
+              <button
+                key={emoji}
+                className={`${styles.emojiOption} ${
+                  selectedEmoji === emoji ? styles.selected : ""
+                }`}
+                onClick={() => {
+                  setSelectedEmoji(emoji);
+                  setShowEmojiPicker(false);
+                }}
+                type="button"
+              >
+                {emoji}
+              </button>
+            ))}
           </div>
-        ))}
+        )}
+
+        {error && <p className={styles.error}>{error}</p>}
       </div>
 
-      <div>
-        <button onClick={handleCreateGame}>Starten</button>
-      </div>
+      {players.length > 0 && (
+        <div className={styles.playersSection}>
+          <h2>Spieler ({players.length})</h2>
+          <div className={styles.players}>
+            {players.map((player) => (
+              <div className={styles.player} key={player.name}>
+                <div className={styles.playerInfo}>
+                  <span className={styles.playerEmoji}>{player.color}</span>
+                  <span className={styles.playerName}>{player.name}</span>
+                </div>
+                <button
+                  className={styles.removeBtn}
+                  onClick={() => handleRemovePlayer(player.name)}
+                  aria-label={`${player.name} entfernen`}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <button
+        onClick={handleCreateGame}
+        className={styles.startBtn}
+        disabled={players.length < 2}
+      >
+        Spiel starten {players.length >= 2 && `(${players.length} Spieler)`}
+      </button>
     </div>
   );
 }

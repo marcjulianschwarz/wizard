@@ -6,6 +6,7 @@ import { useSocket } from "@/app/api/hooks";
 import { useState } from "react";
 import RoundInfo from "@/app/components/RoundInfo/RoundInfo";
 import { currentPoints } from "@/app/api/utils";
+import CopyToClipboard from "@/app/components/CopyToClipboard/CopyToClipboard";
 
 function TrumpCardSelection(props: {
   handleColorClick: (color: string, card: string) => void;
@@ -103,10 +104,17 @@ function PredictedPage(props: {
           <div key={playerState.player.name} className={styles.playerbox}>
             <p>{playerState.player.name}</p>
             <input
+              type="number"
+              min="0"
               className={styles.input}
+              placeholder="0"
+              defaultValue={
+                playerState.points.predicted[game.state.currentRound - 1] ?? ""
+              }
               onChange={(e) => {
+                const value = e.target.value ? parseInt(e.target.value) : 0;
                 playerState.points.predicted[game.state.currentRound - 1] =
-                  parseInt(e.target.value);
+                  value;
                 updateGame(game);
               }}
             />
@@ -129,10 +137,16 @@ function MadePage(props: { game: Game; updateGame: (game: Game) => void }) {
           <div key={playerState.player.name} className={styles.playerbox}>
             <p>{playerState.player.name}</p>
             <input
+              type="number"
+              min="0"
               className={styles.input}
+              placeholder="0"
+              defaultValue={
+                playerState.points.actual[game.state.currentRound - 1] ?? ""
+              }
               onChange={(e) => {
-                playerState.points.actual[game.state.currentRound - 1] =
-                  parseInt(e.target.value);
+                const value = e.target.value ? parseInt(e.target.value) : 0;
+                playerState.points.actual[game.state.currentRound - 1] = value;
                 updateGame(game);
               }}
             />
@@ -157,7 +171,7 @@ function FinalPage(props: { game: Game; updateGame: (game: Game) => void }) {
     for (const playerState of game.state.playerStates) {
       const points = currentPoints(
         playerState.points.predicted,
-        playerState.points.actual
+        playerState.points.actual,
       );
       if (points > maxPoints) {
         maxPoints = points;
@@ -231,13 +245,23 @@ export default function ClientMaster(props: { slug: string }) {
 
   function handleFinale() {
     if (!game) return;
+    const confirmed = window.confirm(
+      maxRounds === game.state.currentRound
+        ? "Möchtest du das Spiel jetzt beenden?"
+        : "Möchtest du das Spiel wirklich vorzeitig beenden?",
+    );
+    if (!confirmed) return;
     game.state.running = false;
     updateGame(game);
     setCurrentPage(3);
   }
 
   if (!game) {
-    return <div>Error loading game data.</div>;
+    return (
+      <div className={styles.loading}>
+        <p>Lade Spieldaten...</p>
+      </div>
+    );
   }
 
   const maxRounds = 60 / game.state.playerStates.length;
@@ -258,7 +282,23 @@ export default function ClientMaster(props: { slug: string }) {
     <div>
       <RoundInfo game={game} />
       <br />
-      <input value={game.joinCode} />
+      <div className={styles.joinCodeBox}>
+        <div className={styles.codeInfo}>
+          <label className={styles.joinCodeLabel}>Beitrittscode:</label>
+          <span className={styles.codeValue}>{game.joinCode}</span>
+        </div>
+        <div className={styles.codeActions}>
+          <CopyToClipboard text={game.joinCode} />
+          <button
+            onClick={() =>
+              window.open(`/game/dashboard/${game.joinCode}`, "_blank")
+            }
+            className={styles.dashboardBtn}
+          >
+            Dashboard öffnen
+          </button>
+        </div>
+      </div>
       <div className={styles.page}>
         <div className={styles.pagecontent}>
           {pages[currentPage]}
