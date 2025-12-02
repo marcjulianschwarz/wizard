@@ -4,7 +4,9 @@ import styles from "./page.module.css";
 import { Game, Player, PlayerState } from "@/app/api/entities";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/app/api/hooks";
-import EmojiPicker, { EMOJI_OPTIONS } from "@/app/components/EmojiPicker/EmojiPicker";
+import EmojiPicker, {
+  EMOJI_OPTIONS,
+} from "@/app/components/EmojiPicker/EmojiPicker";
 import PlayerCard from "@/app/components/PlayerCard/PlayerCard";
 
 function getRandomEmoji(): string {
@@ -37,6 +39,7 @@ export default function Page() {
   const { createGame } = useSocket();
 
   useEffect(() => {
+    document.title = "Wizard - Neues Spiel";
     inputRef.current?.focus();
   }, []);
 

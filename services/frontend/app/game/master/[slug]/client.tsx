@@ -3,7 +3,7 @@
 import { CardColor, Game } from "@/app/api/entities";
 import styles from "./page.module.css";
 import { useSocket } from "@/app/api/hooks";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import RoundInfo from "@/app/components/RoundInfo/RoundInfo";
 import { currentPoints } from "@/app/api/utils";
 import GameCodeDisplay from "@/app/components/GameCodeDisplay/GameCodeDisplay";
@@ -176,6 +176,10 @@ function FinalPage(props: { game: Game; updateGame: (game: Game) => void }) {
 
 export default function ClientMaster(props: { slug: string }) {
   const { game, updateGame } = useSocket(props.slug);
+
+  useEffect(() => {
+    document.title = "Wizard - Controller";
+  }, []);
 
   const [currentPage, setCurrentPage] = useState(0);
   const [selectedTrump, setSelectedTrump] = useState("");

@@ -10,6 +10,7 @@ import RoundInfo from "@/app/components/RoundInfo/RoundInfo";
 import dynamic from "next/dynamic";
 import { currentPoints, lineChartPointsValues } from "@/app/api/utils";
 import Image from "next/image";
+import { useEffect } from "react";
 
 function StatsBlock(props: {
   playerState: PlayerState;
@@ -129,6 +130,10 @@ function FinalPage(props: { game: Game }) {
 
 export default function Page({ params }: { params: { slug: string } }) {
   const { game } = useSocket(params.slug);
+
+  useEffect(() => {
+    document.title = "Wizard - Dashboard";
+  }, []);
 
   if (!game) {
     return (
