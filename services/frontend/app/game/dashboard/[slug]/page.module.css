@@ -157,6 +157,13 @@
     margin: 0;
 }
 
+.playTime {
+    font-size: 1.2em;
+    color: var(--color-2);
+    margin: 0;
+    text-align: center;
+}
+
 .playerScores {
     display: flex;
     flex-direction: column;

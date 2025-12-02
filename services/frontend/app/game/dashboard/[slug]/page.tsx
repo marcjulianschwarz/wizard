@@ -79,6 +79,18 @@ function FinalPage(props: { game: Game }) {
     return playerWithMostPoints;
   }
 
+  function formatPlayTime(startTime: number): string {
+    const elapsedMs = Date.now() - startTime;
+    const totalMinutes = Math.floor(elapsedMs / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    if (hours > 0) {
+      return `${hours}h ${minutes}min`;
+    }
+    return `${minutes}min`;
+  }
+
   const scores = game.state.playerStates.map((playerState) => {
     return currentPoints(
       playerState.points.predicted,
@@ -99,6 +111,9 @@ function FinalPage(props: { game: Game }) {
         <h1 className={styles.winnerTitle}>
           {getPlayerWithMostPoints(game)} hat gewonnen!
         </h1>
+        <p className={styles.playTime}>
+          Spielzeit: {formatPlayTime(game.state.startTime)}
+        </p>
       </div>
 
       <div className={styles.finalContent}>
