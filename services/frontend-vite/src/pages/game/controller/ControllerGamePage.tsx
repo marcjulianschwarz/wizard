@@ -3,6 +3,7 @@ import { useSocket } from "@/api/hooks";
 import { useState } from "react";
 import RoundInfo from "@/components/RoundInfo/RoundInfo";
 import { useParams } from "react-router";
+import PlayerOrderingView from "./views/PlayerOrderingView";
 import TrumpCardSelectionView from "./views/TrumpCardSelectionView";
 import PredictedHitsView from "./views/PredictedHitsView";
 import ActualHitsView from "./views/ActualHitsView";
@@ -55,15 +56,23 @@ export default function ControllerGamePage() {
 
   function handleRoundDonePage() {
     if (!game) return;
+
+    // Rotate player order for next round (move first player to end)
+    const rotatedPlayerStates = [
+      ...game.state.playerStates.slice(1),
+      game.state.playerStates[0],
+    ];
+
     const updatedGame = {
       ...game,
       state: {
         ...game.state,
+        playerStates: rotatedPlayerStates,
         currentRound: game.state.currentRound + 1,
       },
     };
     updateGame(updatedGame);
-    setCurrentPage(0);
+    setCurrentPage(1); // Skip player ordering view for subsequent rounds
   }
 
   function handleFinale() {
@@ -92,6 +101,12 @@ export default function ControllerGamePage() {
   const maxRounds = 60 / game.state.playerStates.length;
 
   const pages = [
+    <PlayerOrderingView
+      key="order"
+      game={game}
+      updateGame={updateGame}
+      onComplete={handleNextPage}
+    />,
     <TrumpCardSelectionView
       key="trump"
       handleColorClick={handleColorClick}
