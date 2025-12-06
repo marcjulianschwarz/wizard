@@ -26,7 +26,7 @@ export default function EmojiPicker({
 
       {isOpen && (
         <div
-          className={`absolute flex w-[450px] flex-wrap p-1 gap-3 z-10 bg-black top-[120%] ${styles.emojiPickerAnimation}`}
+          className={`absolute flex w-[calc(100vw-2rem)] sm:w-[450px] max-w-[450px] flex-wrap p-1 gap-3 z-10 bg-black top-[120%] left-0 sm:left-auto ${styles.emojiPickerAnimation}`}
         >
           {EMOJI_OPTIONS.map((emoji) => (
             <button

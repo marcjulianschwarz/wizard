@@ -104,11 +104,11 @@ export default function NewGamePage() {
   }
 
   return (
-    <div className="m-20">
+    <div className="my-4 mx-4 sm:m-20 max-w-3xl sm:mx-auto">
       <div>
         {error && <p className="text-red-500 mb-4">{error}</p>}
 
-        <div className="flex gap-5">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-5">
           <EmojiPicker
             selectedEmoji={selectedEmoji}
             onSelect={(emoji) => {
@@ -120,20 +120,22 @@ export default function NewGamePage() {
           />
           <Input
             ref={inputRef}
-            className=""
+            className="flex-1"
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
             onKeyDown={handleKeyPress}
             placeholder="Spielername"
           />
-          <Button onClick={handleAddPlayer}>Hinzufügen</Button>
+          <Button onClick={handleAddPlayer} className="w-full sm:w-auto">
+            Hinzufügen
+          </Button>
         </div>
       </div>
 
       {players.length > 0 && (
-        <div className="mt-20">
-          <h2>Spieler ({players.length})</h2>
-          <div className="mt-4">
+        <div className="mt-10 sm:mt-20">
+          <h2 className="text-xl font-bold">Spieler ({players.length})</h2>
+          <div className="mt-4 space-y-2">
             {players.map((player) => (
               <PlayerCard
                 key={player.name}

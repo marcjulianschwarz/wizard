@@ -121,11 +121,11 @@ export default function ControllerGamePage() {
         <div>{pages[currentPage]}</div>
 
         {maxRounds === game.state.currentRound ? (
-          <Button className="bg-red-500 mt-12" onClick={handleFinale}>
+          <Button className="bg-red-500 mt-12 w-fit" onClick={handleFinale}>
             Spiel beenden
           </Button>
         ) : (
-          <Button className="bg-red-500 mt-12" onClick={handleFinale}>
+          <Button className="bg-red-500 mt-12 w-fit" onClick={handleFinale}>
             Vorzeitig Spiel beenden
           </Button>
         )}

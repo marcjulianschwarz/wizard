@@ -197,9 +197,9 @@ export default function DisplayGamePage() {
 
   if (game.state.running) {
     return (
-      <div className="w-full">
+      <div className="w-full p-10">
         <RoundInfo game={game} />
-        <div className="flex gap-5 mt-12 md:mt-16 flex-wrap md:flex-nowrap px-4">
+        <div className="flex gap-5 mt-12 md:mt-16 flex-wrap md:flex-nowrap">
           {game.state.playerStates.map((playerState, idx) => (
             <StatsBlock
               playerState={playerState}

@@ -18,10 +18,10 @@ export default function HomePage() {
   }
 
   return (
-    <main className="w-10/12 m-auto mt-30">
+    <main className="w-11/12 sm:w-10/12 max-w-2xl m-auto mt-10 sm:mt-30 px-4 sm:px-0">
       <Hero title="Wizard" subtitle="" />
 
-      <div className="flex flex-col w-full mt-20">
+      <div className="flex flex-col w-full mt-10 sm:mt-20">
         <NewGame onCreateGame={handleCreateGame} />
 
         <Divider text="oder" />
