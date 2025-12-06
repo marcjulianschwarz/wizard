@@ -139,7 +139,7 @@ function FinalPage(props: { game: Game }) {
   );
 
   return (
-    <div className="w-full p-5 md:p-8 flex flex-col items-center gap-10">
+    <div className="w-full mt-20 p-5 md:p-8 flex flex-col items-center gap-10">
       <div className="flex flex-col items-center gap-5">
         {winner && (
           <span className="text-6xl md:text-8xl leading-none mt-5 animate-bounce">
