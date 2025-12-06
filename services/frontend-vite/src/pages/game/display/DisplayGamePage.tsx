@@ -34,7 +34,7 @@ function StatsBlock(props: {
           {playerState.player.name}
         </p>
       </div>
-      {points ? (
+      {points !== null && points !== undefined ? (
         <div className="mb-2">
           <span className="text-2xl md:text-3xl font-bold text-white">
             {points}
@@ -48,7 +48,7 @@ function StatsBlock(props: {
             predicted === actual ? "text-green-500" : "text-red-500"
           }`}
         >
-          {actual ?? "—"} / {predicted}
+          {actual !== undefined ? actual : "—"} / {predicted}
         </p>
       ) : null}
       <SimpleLineChart
@@ -187,8 +187,13 @@ export default function DisplayGamePage() {
     );
   }
 
+  // Sort players alphabetically for consistent display order
+  const sortedPlayerStates = [...game.state.playerStates].sort((a, b) =>
+    a.player.name.localeCompare(b.player.name),
+  );
+
   // Calculate global min and max
-  const numbers = game.state.playerStates.map((playerState) =>
+  const numbers = sortedPlayerStates.map((playerState) =>
     lineChartPointsValues(playerState, game.state.currentRound),
   );
   const allNumbers = numbers.flat();
@@ -200,7 +205,7 @@ export default function DisplayGamePage() {
       <div className="w-full p-10">
         <RoundInfo game={game} />
         <div className="flex gap-5 mt-12 md:mt-16 flex-wrap md:flex-nowrap">
-          {game.state.playerStates.map((playerState, idx) => (
+          {sortedPlayerStates.map((playerState, idx) => (
             <StatsBlock
               playerState={playerState}
               key={playerState.player.name}

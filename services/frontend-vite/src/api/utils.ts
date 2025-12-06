@@ -26,6 +26,11 @@ export function currentPoints(predicted: number[], actual: number[]) {
     const predicted_ = predicted[i];
     const actual_ = actual[i];
 
+    // Skip if either value is undefined (round not completed yet)
+    if (predicted_ === undefined || actual_ === undefined) {
+      continue;
+    }
+
     if (predicted_ == actual_) {
       total += 20; // bonus points
       total += predicted_ * 10; // normal points

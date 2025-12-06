@@ -19,7 +19,6 @@ export default function ActualHitsView(props: {
       const newValue = currentValue + number;
       setCurrentValue(newValue);
 
-      // Save immediately
       const value = parseInt(newValue);
       const updatedGame: Game = {
         ...game,
@@ -51,75 +50,48 @@ export default function ActualHitsView(props: {
     const newValue = currentValue.slice(0, -1);
     setCurrentValue(newValue);
 
-    // Save immediately (0 if empty)
-    const value = newValue ? parseInt(newValue) : 0;
-    const updatedGame: Game = {
-      ...game,
-      state: {
-        ...game.state,
-        playerStates: game.state.playerStates.map((ps, index) => {
-          if (index === currentPlayerIndex) {
-            return {
-              ...ps,
-              points: {
-                ...ps.points,
-                actual: [
-                  ...ps.points.actual.slice(0, game.state.currentRound - 1),
-                  value,
-                  ...ps.points.actual.slice(game.state.currentRound),
-                ],
-              },
-            };
-          }
-          return ps;
-        }),
-      },
-    };
-    updateGame(updatedGame);
+    if (newValue) {
+      const value = parseInt(newValue);
+      const updatedGame: Game = {
+        ...game,
+        state: {
+          ...game.state,
+          playerStates: game.state.playerStates.map((ps, index) => {
+            if (index === currentPlayerIndex) {
+              return {
+                ...ps,
+                points: {
+                  ...ps.points,
+                  actual: [
+                    ...ps.points.actual.slice(0, game.state.currentRound - 1),
+                    value,
+                    ...ps.points.actual.slice(game.state.currentRound),
+                  ],
+                },
+              };
+            }
+            return ps;
+          }),
+        },
+      };
+      updateGame(updatedGame);
+    }
   };
 
   const handleClear = () => {
     setCurrentValue("");
-
-    // Save 0 immediately
-    const updatedGame: Game = {
-      ...game,
-      state: {
-        ...game.state,
-        playerStates: game.state.playerStates.map((ps, index) => {
-          if (index === currentPlayerIndex) {
-            return {
-              ...ps,
-              points: {
-                ...ps.points,
-                actual: [
-                  ...ps.points.actual.slice(0, game.state.currentRound - 1),
-                  0,
-                  ...ps.points.actual.slice(game.state.currentRound),
-                ],
-              },
-            };
-          }
-          return ps;
-        }),
-      },
-    };
-    updateGame(updatedGame);
   };
 
   const handleConfirm = () => {
-    // Data is already saved on each input, just navigate
     if (currentPlayerIndex < totalPlayers - 1) {
       setCurrentPlayerIndex((prev) => prev + 1);
       setCurrentValue("");
     } else {
-      // Last player completed, trigger navigation
       onComplete?.();
     }
   };
 
   const handlePlayerClick = (index: number) => {
-    // Data is already saved on each input, just switch player
     setCurrentPlayerIndex(index);
     const playerValue =
       game.state.playerStates[index].points.actual[game.state.currentRound - 1];
@@ -141,7 +113,7 @@ export default function ActualHitsView(props: {
           {game.state.playerStates.map((playerState, index) => {
             const displayValue =
               index === currentPlayerIndex
-                ? currentValue || "0"
+                ? currentValue || "—"
                 : (playerState.points.actual[
                     game.state.currentRound - 1
                   ]?.toString() ?? "—");
