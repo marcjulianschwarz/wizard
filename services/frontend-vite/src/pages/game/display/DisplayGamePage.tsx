@@ -13,8 +13,10 @@ function StatsBlock(props: {
   globalMin: number;
   globalMax: number;
   allNumbers: number[];
+  rank?: number;
 }) {
-  const { playerState, currentRound, allNumbers, globalMax, globalMin } = props;
+  const { playerState, currentRound, allNumbers, globalMax, globalMin, rank } =
+    props;
 
   const predicted = playerState.points.predicted[currentRound - 1];
   const actual = playerState.points.actual[currentRound - 1];
@@ -24,8 +26,27 @@ function StatsBlock(props: {
     playerState.points.actual,
   );
 
+  // Determine border color based on rank
+  const getBorderColor = () => {
+    if (rank === undefined) return "border-neutral-800";
+    if (rank === 1) return "border-yellow-500"; // Gold
+    if (rank === 2) return "border-gray-400"; // Silver
+    if (rank === 3) return "border-amber-700"; // Bronze
+    return "border-neutral-800";
+  };
+
+  const getHoverBorderColor = () => {
+    if (rank === undefined) return "hover:border-neutral-700";
+    if (rank === 1) return "hover:border-yellow-400";
+    if (rank === 2) return "hover:border-gray-300";
+    if (rank === 3) return "hover:border-amber-600";
+    return "hover:border-neutral-700";
+  };
+
   return (
-    <div className="grow p-4 bg-neutral-900 border border-neutral-800 rounded-xl transition-transform duration-200 hover:-translate-y-0.5 hover:border-neutral-700">
+    <div
+      className={`grow p-4 bg-neutral-900 border-2 ${getBorderColor()} rounded-xl transition-transform duration-200 hover:-translate-y-0.5 ${getHoverBorderColor()}`}
+    >
       <div className="flex items-center gap-3 mb-3">
         <span className="text-3xl md:text-4xl leading-none">
           {playerState.player.color}
@@ -200,6 +221,26 @@ export default function DisplayGamePage() {
   const globalMin = Math.min(...allNumbers);
   const globalMax = Math.max(...allNumbers);
 
+  // Calculate rankings based on current points
+  const playersWithScores = sortedPlayerStates.map((playerState) => ({
+    playerState,
+    score: currentPoints(
+      playerState.points.predicted,
+      playerState.points.actual,
+    ),
+  }));
+
+  // Sort by score descending to get rankings
+  const rankedPlayers = [...playersWithScores].sort(
+    (a, b) => b.score - a.score,
+  );
+
+  // Create rank map
+  const rankMap = new Map<string, number>();
+  rankedPlayers.forEach((player, index) => {
+    rankMap.set(player.playerState.player.name, index + 1);
+  });
+
   if (game.state.running) {
     return (
       <div className="w-full p-10">
@@ -213,6 +254,7 @@ export default function DisplayGamePage() {
               globalMin={globalMin}
               globalMax={globalMax}
               allNumbers={numbers[idx]}
+              rank={rankMap.get(playerState.player.name)}
             />
           ))}
         </div>
