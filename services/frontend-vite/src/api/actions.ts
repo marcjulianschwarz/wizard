@@ -1,7 +1,9 @@
 import { type Game } from "./entities";
 
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL;
+
 export async function updateGameState(newState: Game) {
-  const res = await fetch("http://localhost:3000/setGameState", {
+  const res = await fetch(`${API_BASE_URL}/setGameState`, {
     method: "POST",
     headers: {
       Accept: "application/json",
