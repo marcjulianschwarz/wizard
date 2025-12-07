@@ -15,14 +15,25 @@ export const useSocket = (joinCode?: string) => {
       return socketRef.current;
     }
 
-    const newSocket = io(SOCKET_SERVER_URL, {
+    // Extract the base URL and path from SOCKET_SERVER_URL
+    const url = new URL(SOCKET_SERVER_URL);
+    const basePath = url.pathname === "/" ? "" : url.pathname;
+    const socketPath = basePath ? `${basePath}/socket.io` : "/socket.io";
+
+    const newSocket = io(url.origin, {
+      path: socketPath,
       transports: ["websocket", "polling"],
       withCredentials: true,
       autoConnect: true,
       reconnection: true,
     });
 
-    console.log("Attempting to connect to:", SOCKET_SERVER_URL);
+    console.log(
+      "Attempting to connect to:",
+      SOCKET_SERVER_URL,
+      "with path:",
+      socketPath,
+    );
 
     const handleConnect = () => {
       console.log("Connected to WebSocket");
