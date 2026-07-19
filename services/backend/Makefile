@@ -1,4 +1,4 @@
 .PHONY: dev
 
 dev:
-	yarn start:dev
+	pnpm start:dev

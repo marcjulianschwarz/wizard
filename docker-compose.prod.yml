@@ -5,6 +5,11 @@ services:
     container_name: wizard-backend
     restart: always
     env_file: .env
+    environment:
+      - DATABASE_PATH=/app/data/wizard.db
+    volumes:
+      # Persist the SQLite DB (leagues + games) across redeploys.
+      - ./data:/app/data
     ports:
       - "127.0.0.1:8010:3000"
 

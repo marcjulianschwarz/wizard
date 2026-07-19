@@ -7,6 +7,9 @@ services:
     environment:
       - FRONTEND_URL=${FRONTEND_URL}
       - NODE_ENV=${NODE_ENV}
+      - DATABASE_PATH=/app/data/wizard.db
+    volumes:
+      - ./data:/app/data
     ports:
       - "8010:3000"
     restart: unless-stopped

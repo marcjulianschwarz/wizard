@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
+import { Link } from "react-router";
 import type { Game } from "@/api/entities";
 import { currentPoints } from "@/api/utils";
 import Button from "@/components/Button/Button";
@@ -89,6 +90,13 @@ export default function FinalView(props: {
         >
           {isExporting ? "Exportiere…" : "Export"}
         </Button>
+        {game.leagueId && (
+          <Link to={`/league/${game.leagueId}`}>
+            <Button className="border border-[#A2BD53] bg-[#A2BD53] text-black">
+              Zur Liga
+            </Button>
+          </Link>
+        )}
       </div>
 
       {/* Off-screen 16:9 canvas used purely as the screenshot source. Shifted

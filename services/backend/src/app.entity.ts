@@ -17,6 +17,10 @@ export interface PointsState {
 export interface Player {
   name: string;
   color: string;
+  order?: number;
+  // League Player.id when this game belongs to a league. Absent for standalone
+  // games. Lets standings aggregate across games and survive renames.
+  playerId?: string;
 }
 
 export interface PlayerState {
@@ -38,4 +42,44 @@ export interface Game {
   state: GameState;
   settings?: Settings;
   joinCode: string;
+  // Nullable: standalone games have no league. When set, the game shows up in
+  // the league's games list and feeds its standings.
+  leagueId?: string;
+}
+
+export interface League {
+  id: string;
+  name: string;
+  createdAt: number;
+}
+
+export interface LeaguePlayer {
+  id: string;
+  leagueId: string;
+  name: string;
+  color: string;
+}
+
+export interface LeagueDetail extends League {
+  players: LeaguePlayer[];
+}
+
+export interface Standing {
+  playerId: string;
+  name: string;
+  color: string;
+  gamesPlayed: number;
+  totalPoints: number;
+  wins: number;
+  averagePoints: number;
+  bestGame: number;
+}
+
+export interface GameSummary {
+  joinCode: string;
+  name?: string;
+  createdAt: number;
+  finished: boolean;
+  winner?: { name: string; color: string; points: number };
+  playerCount: number;
 }
