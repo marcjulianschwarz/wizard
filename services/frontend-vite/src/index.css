@@ -31,3 +31,27 @@ h6 {
     margin: 0;
     padding: 0;
 }
+
+/* Gentle glow pulse for the current leader's card. */
+/* Animated gradient sweep for the winner headline. */
+@keyframes shimmer {
+    to {
+        background-position: 200% center;
+    }
+}
+
+@utility text-shimmer {
+    background: linear-gradient(
+        90deg,
+        #22c55e,
+        #a3e635,
+        #22c55e,
+        #a3e635,
+        #22c55e
+    );
+    background-size: 200% auto;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    animation: shimmer 4s linear infinite;
+}

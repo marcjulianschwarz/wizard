@@ -7,12 +7,26 @@ import { useParams } from "react-router";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useState, useEffect } from "react";
 
-function rankMedal(rank?: number): string | null {
-  if (rank === 1) return "🥇";
-  if (rank === 2) return "🥈";
-  if (rank === 3) return "🥉";
-  return null;
-}
+// Visual treatment per rank. `chart` is a hex color handed to the line chart.
+const RANK_STYLE: Record<number, { card: string; chart: string }> = {
+  1: {
+    card: "border-yellow-500 bg-gradient-to-br from-yellow-500/15 to-neutral-900 shadow-[0_0_40px_-3px_rgba(234,179,8,0.55)] ring-1 ring-yellow-500/40",
+    chart: "#eab308",
+  },
+  2: {
+    card: "border-gray-400 bg-gradient-to-br from-gray-400/10 to-neutral-900",
+    chart: "#9ca3af",
+  },
+  3: {
+    card: "border-amber-700 bg-gradient-to-br from-amber-700/10 to-neutral-900",
+    chart: "#b45309",
+  },
+};
+
+const DEFAULT_RANK_STYLE = {
+  card: "border-neutral-800 bg-neutral-900 hover:border-neutral-700",
+  chart: "#8884d8",
+};
 
 function StatsBlock(props: {
   playerState: PlayerState;
@@ -21,11 +35,19 @@ function StatsBlock(props: {
   globalMax: number;
   allNumbers: number[];
   rank?: number;
+  isNext?: boolean;
 }) {
-  const { playerState, currentRound, allNumbers, globalMax, globalMin, rank } =
-    props;
+  const {
+    playerState,
+    currentRound,
+    allNumbers,
+    globalMax,
+    globalMin,
+    rank,
+    isNext,
+  } = props;
 
-  const medal = rankMedal(rank);
+  const style = (rank && RANK_STYLE[rank]) || DEFAULT_RANK_STYLE;
 
   const predicted = playerState.points.predicted[currentRound - 1];
   const actual = playerState.points.actual[currentRound - 1];
@@ -35,62 +57,63 @@ function StatsBlock(props: {
     playerState.points.actual,
   );
 
-  // Determine border color based on rank
-  const getBorderColor = () => {
-    if (rank === undefined) return "border-neutral-800";
-    if (rank === 1) return "border-yellow-500"; // Gold
-    if (rank === 2) return "border-gray-400"; // Silver
-    if (rank === 3) return "border-amber-700"; // Bronze
-    return "border-neutral-800";
-  };
-
-  const getHoverBorderColor = () => {
-    if (rank === undefined) return "hover:border-neutral-700";
-    if (rank === 1) return "hover:border-yellow-400";
-    if (rank === 2) return "hover:border-gray-300";
-    if (rank === 3) return "hover:border-amber-600";
-    return "hover:border-neutral-700";
-  };
-
   return (
     <div
-      className={`grow p-4 bg-neutral-900 border-2 ${getBorderColor()} rounded-xl transition-transform duration-200 hover:-translate-y-0.5 ${getHoverBorderColor()}`}
+      className={`relative overflow-hidden grow p-4 border-2 rounded-xl transition-transform duration-200 hover:-translate-y-1 ${style.card} ${
+        isNext ? "ring-4 ring-blue-500 shadow-[0_0_35px_-3px_rgba(59,130,246,0.6)]" : ""
+      }`}
     >
-      <div className="flex items-center gap-3 mb-3">
+      {/* Oversized rank number watermark */}
+      {rank ? (
+        <span className="pointer-events-none select-none absolute top-2 right-4 text-7xl font-black text-white/5 leading-none">
+          {rank}
+        </span>
+      ) : null}
+
+      <div className="relative z-10 flex items-center gap-3 mb-3">
         <span className="text-3xl md:text-4xl leading-none">
           {playerState.player.color}
         </span>
-        <p className="text-lg md:text-xl text-white m-0">
+        <p className="text-lg md:text-xl font-semibold text-white m-0 truncate">
           {playerState.player.name}
         </p>
-        {medal ? (
-          <span className="text-2xl md:text-3xl leading-none ml-auto">
-            {medal}
+        {isNext ? (
+          <span className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
+            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            am Zug
           </span>
         ) : null}
       </div>
       {points !== null && points !== undefined ? (
-        <div className="mb-2">
-          <span className="text-2xl md:text-3xl font-bold text-white">
+        <div className="relative z-10 mb-2 flex items-baseline gap-1">
+          <span className="text-4xl md:text-5xl font-black text-white tabular-nums tracking-tight">
             {points}
           </span>
-          <span className="text-white ml-1">pkt</span>
+          <span className="text-sm text-neutral-400 uppercase tracking-wider">
+            pkt
+          </span>
         </div>
       ) : null}
+      {/* While there's a value for this round, show the big number instead of
+          the chart; otherwise show the points progression chart. */}
       {predicted !== undefined ? (
-        <p
-          className={`font-bold mb-3 ${
-            predicted === actual ? "text-green-500" : "text-red-500"
-          }`}
-        >
-          {actual !== undefined ? actual : "—"} / {predicted}
-        </p>
-      ) : null}
-      <SimpleLineChart
-        numbers={allNumbers}
-        globalMax={globalMax}
-        globalMin={globalMin}
-      />
+        <div className="flex items-center justify-center h-[300px]">
+          <span
+            className={`text-6xl md:text-7xl font-black tabular-nums tracking-tight ${
+              predicted === actual ? "text-green-400" : "text-red-400"
+            }`}
+          >
+            {actual !== undefined ? actual : "—"} / {predicted}
+          </span>
+        </div>
+      ) : (
+        <SimpleLineChart
+          numbers={allNumbers}
+          globalMax={globalMax}
+          globalMin={globalMin}
+          color={style.chart}
+        />
+      )}
     </div>
   );
 }
@@ -136,22 +159,27 @@ function FinalPage(props: { game: Game }) {
       ? `${winners.map((w) => w.player.name).join(" & ")} haben gewonnen!`
       : `${winners[0].player.name} hat gewonnen!`;
 
+  const placeMedal = (idx: number) =>
+    ["🥇", "🥈", "🥉"][idx] ?? `${idx + 1}.`;
+
   return (
     <div className="w-full mt-20 p-5 md:p-8 flex flex-col items-center gap-10">
-      <div className="flex flex-col items-center gap-5">
+      <div className="relative flex flex-col items-center gap-5">
+        {/* Soft glow behind the winners */}
+        <div className="pointer-events-none absolute -top-10 h-64 w-64 rounded-full bg-green-500/20 blur-3xl" />
         {winners.length > 0 && (
-          <div className="flex gap-4">
+          <div className="relative flex gap-4">
             {winners.map((w) => (
               <span
                 key={w.player.name}
-                className="text-6xl md:text-8xl leading-none mt-5 animate-bounce"
+                className="text-6xl md:text-8xl leading-none mt-5 animate-bounce drop-shadow-[0_0_25px_rgba(34,197,94,0.6)]"
               >
                 {w.player.color}
               </span>
             ))}
           </div>
         )}
-        <h1 className="text-3xl md:text-5xl text-center font-normal text-green-500 m-0">
+        <h1 className="relative text-4xl md:text-6xl text-center font-black tracking-tight text-shimmer m-0">
           {winnerTitle}
         </h1>
         <p className="text-lg md:text-xl text-neutral-400 m-0 text-center">
@@ -161,16 +189,19 @@ function FinalPage(props: { game: Game }) {
 
       <div className="flex flex-col items-center gap-10 w-full max-w-3xl">
         <div className="flex flex-col gap-4 w-full max-w-lg">
-          {ranked.map(({ ps, score }) => (
+          {ranked.map(({ ps, score }, idx) => (
               <div
                 key={ps.player.name}
-                className={`flex justify-between items-center p-4 md:p-5 bg-neutral-900 border rounded-xl transition-all duration-200 hover:translate-x-1 hover:border-neutral-700 ${
+                className={`flex justify-between items-center p-4 md:p-5 border rounded-xl transition-all duration-200 hover:translate-x-1 ${
                   score === topScore
-                    ? "border-green-500 bg-green-500/10"
-                    : "border-neutral-800"
+                    ? "border-green-500 bg-gradient-to-r from-green-500/15 to-neutral-900 shadow-[0_0_25px_-8px_rgba(34,197,94,0.6)]"
+                    : "border-neutral-800 bg-neutral-900 hover:border-neutral-700"
                 }`}
               >
                 <div className="flex items-center gap-3">
+                  <span className="text-xl md:text-2xl w-8 text-center leading-none tabular-nums text-neutral-400">
+                    {placeMedal(idx)}
+                  </span>
                   <span className="text-2xl md:text-3xl leading-none">
                     {ps.player.color}
                   </span>
@@ -178,7 +209,11 @@ function FinalPage(props: { game: Game }) {
                     {ps.player.name}
                   </span>
                 </div>
-                <span className="text-xl md:text-2xl font-bold text-green-500">
+                <span
+                  className={`text-xl md:text-2xl font-bold tabular-nums ${
+                    score === topScore ? "text-green-400" : "text-neutral-200"
+                  }`}
+                >
                   {score} pkt
                 </span>
               </div>
@@ -244,6 +279,13 @@ export default function DisplayGamePage() {
     if (rank === -1) ranks[idx] = ranks[idx - 1];
   });
 
+  // The controller predicts hits in playerStates order and saves each one
+  // immediately, so the next player up is the first one (in that order) who
+  // has no prediction for the current round yet.
+  const nextToPredict = game.state.playerStates.find(
+    (ps) => ps.points.predicted[game.state.currentRound - 1] === undefined,
+  );
+
   if (game.state.running) {
     return (
       <div className="w-full p-10">
@@ -258,6 +300,7 @@ export default function DisplayGamePage() {
               globalMax={globalMax}
               allNumbers={numbers[idx]}
               rank={ranks[idx]}
+              isNext={playerState.player.name === nextToPredict?.player.name}
             />
           ))}
         </div>
