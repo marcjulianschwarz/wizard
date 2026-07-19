@@ -29,6 +29,7 @@ export default function NewGamePage() {
   const [error, setError] = useState("");
   const [selectedEmoji, setSelectedEmoji] = useState(getRandomEmoji());
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [mustNotAddUp, setMustNotAddUp] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const code = generateRandomString(8);
   const navigate = useNavigate();
@@ -78,6 +79,7 @@ export default function NewGamePage() {
     const game: Game = {
       name: "",
       joinCode: code,
+      settings: { mustNotAddUp },
       state: {
         startTime: Date.now(),
         currentRound: 1,
@@ -147,9 +149,25 @@ export default function NewGamePage() {
         </div>
       )}
 
+      <label className="mt-10 flex items-center gap-3 cursor-pointer select-none rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+        <input
+          type="checkbox"
+          checked={mustNotAddUp}
+          onChange={(e) => setMustNotAddUp(e.target.checked)}
+          className="h-5 w-5 accent-[#A2BD53]"
+        />
+        <div>
+          <p className="m-0 font-medium text-white">Darf nicht aufgehen</p>
+          <p className="m-0 text-sm text-neutral-400">
+            Die Summe aller angesagten Stiche darf nicht der Rundenzahl
+            entsprechen.
+          </p>
+        </div>
+      </label>
+
       <Button
         onClick={handleCreateGame}
-        className="border border-[#A2BD53] bg-[#A2BD53] text-black w-full mt-10"
+        className="border border-[#A2BD53] bg-[#A2BD53] text-black w-full mt-6"
       >
         Spiel starten {players.length >= 2 && `(${players.length} Spieler)`}
       </Button>

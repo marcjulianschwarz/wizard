@@ -1,7 +1,11 @@
 export type CardColor = "red" | "green" | "blue" | "yellow";
 
 export interface Settings {
-  someSetting: string;
+  someSetting?: string;
+  // "Darf nicht aufgehen": the total of all players' predicted hits must not
+  // equal the round number, so the last player to predict is forbidden the one
+  // value that would make it add up exactly.
+  mustNotAddUp?: boolean;
 }
 
 export interface PointsState {

@@ -1,4 +1,35 @@
-import { type PlayerState } from "./entities";
+import { type Game, type PlayerState } from "./entities";
+
+// For the "Darf nicht aufgehen" rule: the value the last player to predict is
+// forbidden to pick, so the total of all predictions does not equal the round
+// number. `predictionOrder` is the players in the order they predict this round
+// (index 0 first, last index predicts last). Returns null when it can't apply
+// yet (rule off, not all earlier players have predicted, or the forbidden value
+// falls outside the valid 0..round range so any pick is fine).
+export function forbiddenLastPrediction(props: {
+  game: Game;
+  predictionOrder: PlayerState[];
+}): number | null {
+  const { game, predictionOrder } = props;
+  if (!game.settings?.mustNotAddUp) return null;
+  if (predictionOrder.length < 2) return null;
+
+  const round = game.state.currentRound;
+  const earlier = predictionOrder.slice(0, -1);
+
+  let sum = 0;
+  for (const ps of earlier) {
+    const predicted = ps.points.predicted[round - 1];
+    // The rule only becomes determinable once every earlier player predicted.
+    if (predicted === undefined) return null;
+    sum += predicted;
+  }
+
+  const forbidden = round - sum;
+  // Out of the pickable range (0..round) — no value is actually blocked.
+  if (forbidden < 0 || forbidden > round) return null;
+  return forbidden;
+}
 
 export function getTimeDifference(
   start: number,

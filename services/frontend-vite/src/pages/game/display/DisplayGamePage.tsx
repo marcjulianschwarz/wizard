@@ -1,7 +1,11 @@
 import type { Game, PlayerState } from "@/api/entities";
 import { useSocket } from "@/api/hooks";
 import DisplayRoundInfo from "@/components/RoundInfo/DisplayRoundInfo";
-import { currentPoints, lineChartPointsValues } from "@/api/utils";
+import {
+  currentPoints,
+  lineChartPointsValues,
+  forbiddenLastPrediction,
+} from "@/api/utils";
 import SimpleLineChart from "@/components/SimpleLineChart/SimpleLineChart";
 import { useParams } from "react-router";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -37,6 +41,10 @@ function StatsBlock(props: {
   allNumbers: number[];
   rank?: number;
   chartHeight?: number;
+  // "Darf nicht aufgehen": value this (last-to-predict) player may not choose,
+  // and whether they are being warned or have actually picked it (blocked).
+  forbiddenValue?: number | null;
+  forbiddenState?: "warn" | "blocked" | null;
 }) {
   const {
     playerState,
@@ -46,7 +54,13 @@ function StatsBlock(props: {
     globalMin,
     rank,
     chartHeight = 300,
+    forbiddenValue,
+    forbiddenState,
   } = props;
+
+  const isBlocked = forbiddenState === "blocked";
+  const showForbidden =
+    forbiddenState != null && forbiddenValue !== null && forbiddenValue !== undefined;
 
   const style = (rank && RANK_STYLE[rank]) || DEFAULT_RANK_STYLE;
 
@@ -60,7 +74,13 @@ function StatsBlock(props: {
 
   return (
     <div
-      className={`relative overflow-hidden grow p-4 border-2 rounded-xl transition-transform duration-200 hover:-translate-y-1 ${style.card}`}
+      className={`relative overflow-hidden grow p-4 border-2 rounded-xl transition-transform duration-200 hover:-translate-y-1 ${
+        showForbidden
+          ? isBlocked
+            ? "border-red-500 shadow-[0_0_40px_-6px_rgba(239,68,68,0.7)]"
+            : "border-orange-500 shadow-[0_0_40px_-6px_rgba(249,115,22,0.6)]"
+          : style.card
+      }`}
     >
       {/* Oversized rank number watermark */}
       {rank ? (
@@ -87,13 +107,41 @@ function StatsBlock(props: {
           </span>
         </div>
       ) : null}
-      {/* While there's a value for this round, show the big number instead of
-          the chart; otherwise show the points progression chart. */}
-      {predicted !== undefined ? (
-        <div
-          className="flex items-center justify-center"
-          style={{ height: chartHeight }}
-        >
+      {/* "Darf nicht aufgehen": orange warns, red = value was picked. Replaces
+          the number/chart area so the player name, points and rank stay
+          visible. */}
+      {/* Reserve the number/chart area so the card keeps a stable height even
+          when the number is absolutely centered over the whole card. */}
+      {(showForbidden || predicted !== undefined) && (
+        <div style={{ height: chartHeight }} aria-hidden />
+      )}
+      {showForbidden ? (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 pt-8 text-center pointer-events-none">
+          <span
+            className={`text-sm font-semibold uppercase tracking-wider ${
+              isBlocked ? "text-red-400" : "text-orange-400"
+            }`}
+          >
+            {isBlocked ? "Nicht erlaubt" : "Darf nicht"}
+          </span>
+          <span
+            className={`text-7xl md:text-8xl font-black tabular-nums leading-none ${
+              isBlocked ? "text-red-500" : "text-orange-500"
+            }`}
+          >
+            {forbiddenValue}
+          </span>
+          <span
+            className={`text-sm ${
+              isBlocked ? "text-red-300/80" : "text-orange-300/80"
+            }`}
+          >
+            ansagen
+          </span>
+        </div>
+      ) : predicted !== undefined ? (
+        // A value for this round exists: show the big number instead of chart.
+        <div className="absolute inset-0 flex items-center justify-center pt-8 pointer-events-none">
           <span
             className={`text-6xl md:text-7xl font-black tabular-nums tracking-tight ${
               predicted === actual ? "text-green-400" : "text-red-400"
@@ -371,6 +419,26 @@ export default function DisplayGamePage() {
   const afterNextToPredict =
     game.state.playerStates[1 % game.state.playerStates.length];
 
+  // "Darf nicht aufgehen": once all earlier players predicted, the last player
+  // has one forbidden value. Warn in orange until they pick; if they actually
+  // enter that value, flip the card to a red "not allowed" state.
+  const lastPredictor =
+    game.state.playerStates[game.state.playerStates.length - 1];
+  const forbiddenValue = forbiddenLastPrediction({
+    game,
+    predictionOrder: game.state.playerStates,
+  });
+  const lastPrediction =
+    lastPredictor?.points.predicted[game.state.currentRound - 1];
+  const forbiddenState: "warn" | "blocked" | null =
+    forbiddenValue === null
+      ? null
+      : lastPrediction === forbiddenValue
+        ? "blocked"
+        : lastPrediction === undefined
+          ? "warn"
+          : null;
+
   if (game.state.running) {
     return (
       <div className="w-full p-10">
@@ -389,6 +457,16 @@ export default function DisplayGamePage() {
               globalMax={globalMax}
               allNumbers={numbers[idx]}
               rank={ranks[idx]}
+              forbiddenValue={
+                playerState.player.name === lastPredictor?.player.name
+                  ? forbiddenValue
+                  : null
+              }
+              forbiddenState={
+                playerState.player.name === lastPredictor?.player.name
+                  ? forbiddenState
+                  : null
+              }
             />
           ))}
         </div>

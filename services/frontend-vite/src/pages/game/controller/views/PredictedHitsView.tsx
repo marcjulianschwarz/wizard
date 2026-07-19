@@ -2,6 +2,7 @@ import type { Game } from "@/api/entities";
 import { useState } from "react";
 import PlayerListItem from "@/components/PlayerListItem/PlayerListItem";
 import NumberPad from "@/components/NumberPad/NumberPad";
+import { forbiddenLastPrediction } from "@/api/utils";
 
 export default function PredictedHitsView(props: {
   game: Game;
@@ -111,6 +112,8 @@ export default function PredictedHitsView(props: {
   };
 
   const handleConfirm = () => {
+    // Block the forbidden value under the "Darf nicht aufgehen" rule.
+    if (isForbiddenPick) return;
     // Data is already saved on each input, just navigate
     if (currentPlayerIndex < totalPlayers - 1) {
       setCurrentPlayerIndex((prev) => prev + 1);
@@ -132,6 +135,18 @@ export default function PredictedHitsView(props: {
   };
 
   const isLastPlayer = currentPlayerIndex === totalPlayers - 1;
+
+  // "Darf nicht aufgehen": the forbidden value for the last player this round.
+  const forbiddenValue = forbiddenLastPrediction({
+    game,
+    predictionOrder: game.state.playerStates,
+  });
+  // Only the last-to-predict player is actually blocked from this value.
+  const currentValueNumber = currentValue ? parseInt(currentValue) : 0;
+  const isForbiddenPick =
+    isLastPlayer &&
+    forbiddenValue !== null &&
+    currentValueNumber === forbiddenValue;
 
   return (
     <div className="max-w-sm mx-auto mt-10">
@@ -167,6 +182,15 @@ export default function PredictedHitsView(props: {
         </div>
       </div>
 
+      {/* "Darf nicht aufgehen" warning for the last player. */}
+      {isLastPlayer && forbiddenValue !== null && (
+        <div className="mb-4 rounded-xl border border-orange-500/50 bg-orange-500/10 p-3 text-orange-400">
+          <p className="m-0 text-sm font-medium">
+            Darf nicht {forbiddenValue} ansagen.
+          </p>
+        </div>
+      )}
+
       <NumberPad
         onNumberClick={handleNumberClick}
         onClear={handleClear}
@@ -177,9 +201,14 @@ export default function PredictedHitsView(props: {
       <div className="flex gap-3">
         <button
           onClick={handleConfirm}
-          className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-medium py-4 px-6 rounded-xl transition-all duration-150 active:scale-98"
+          disabled={isForbiddenPick}
+          className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-neutral-700 disabled:cursor-not-allowed text-white font-medium py-4 px-6 rounded-xl transition-all duration-150 active:scale-98"
         >
-          {isLastPlayer ? "Fertig ✓" : "Weiter →"}
+          {isForbiddenPick
+            ? `${forbiddenValue} nicht erlaubt`
+            : isLastPlayer
+              ? "Fertig ✓"
+              : "Weiter →"}
         </button>
       </div>
     </div>
