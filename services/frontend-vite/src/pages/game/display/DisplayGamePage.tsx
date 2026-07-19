@@ -7,6 +7,13 @@ import { useParams } from "react-router";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useState, useEffect } from "react";
 
+function rankMedal(rank?: number): string | null {
+  if (rank === 1) return "🥇";
+  if (rank === 2) return "🥈";
+  if (rank === 3) return "🥉";
+  return null;
+}
+
 function StatsBlock(props: {
   playerState: PlayerState;
   currentRound: number;
@@ -17,6 +24,8 @@ function StatsBlock(props: {
 }) {
   const { playerState, currentRound, allNumbers, globalMax, globalMin, rank } =
     props;
+
+  const medal = rankMedal(rank);
 
   const predicted = playerState.points.predicted[currentRound - 1];
   const actual = playerState.points.actual[currentRound - 1];
@@ -54,6 +63,11 @@ function StatsBlock(props: {
         <p className="text-lg md:text-xl text-white m-0">
           {playerState.player.name}
         </p>
+        {medal ? (
+          <span className="text-2xl md:text-3xl leading-none ml-auto">
+            {medal}
+          </span>
+        ) : null}
       </div>
       {points !== null && points !== undefined ? (
         <div className="mb-2">
@@ -93,28 +107,6 @@ function FinalPage(props: { game: Game }) {
     return () => clearInterval(interval);
   }, []);
 
-  function getPlayerWithMostPoints(game: Game): string {
-    if (!game.state.playerStates.length) {
-      return "No players in the game";
-    }
-
-    let maxPoints = -Infinity;
-    let playerWithMostPoints = "";
-
-    for (const playerState of game.state.playerStates) {
-      const points = currentPoints(
-        playerState.points.predicted,
-        playerState.points.actual,
-      );
-      if (points > maxPoints) {
-        maxPoints = points;
-        playerWithMostPoints = playerState.player.name;
-      }
-    }
-
-    return playerWithMostPoints;
-  }
-
   function formatPlayTime(startTime: number, currentTime: number): string {
     const elapsedMs = currentTime - startTime;
     const totalMinutes = Math.floor(elapsedMs / 60000);
@@ -127,27 +119,40 @@ function FinalPage(props: { game: Game }) {
     return `${minutes}min`;
   }
 
-  const scores = game.state.playerStates.map((playerState) => {
-    return currentPoints(
-      playerState.points.predicted,
-      playerState.points.actual,
-    );
-  });
+  const ranked = game.state.playerStates
+    .map((ps) => ({
+      ps,
+      score: currentPoints(ps.points.predicted, ps.points.actual),
+    }))
+    .sort((a, b) => b.score - a.score);
 
-  const winner = game.state.playerStates.find(
-    (ps) => ps.player.name === getPlayerWithMostPoints(game),
-  );
+  const topScore = ranked.length ? ranked[0].score : -Infinity;
+  const winners = ranked.filter((r) => r.score === topScore).map((r) => r.ps);
+  const isTie = winners.length > 1;
+
+  const winnerTitle = !ranked.length
+    ? "No players in the game"
+    : isTie
+      ? `${winners.map((w) => w.player.name).join(" & ")} haben gewonnen!`
+      : `${winners[0].player.name} hat gewonnen!`;
 
   return (
     <div className="w-full mt-20 p-5 md:p-8 flex flex-col items-center gap-10">
       <div className="flex flex-col items-center gap-5">
-        {winner && (
-          <span className="text-6xl md:text-8xl leading-none mt-5 animate-bounce">
-            {winner.player.color}
-          </span>
+        {winners.length > 0 && (
+          <div className="flex gap-4">
+            {winners.map((w) => (
+              <span
+                key={w.player.name}
+                className="text-6xl md:text-8xl leading-none mt-5 animate-bounce"
+              >
+                {w.player.color}
+              </span>
+            ))}
+          </div>
         )}
         <h1 className="text-3xl md:text-5xl text-center font-normal text-green-500 m-0">
-          {getPlayerWithMostPoints(game)} hat gewonnen!
+          {winnerTitle}
         </h1>
         <p className="text-lg md:text-xl text-neutral-400 m-0 text-center">
           Spielzeit: {formatPlayTime(game.state.startTime, currentTime)}
@@ -156,14 +161,11 @@ function FinalPage(props: { game: Game }) {
 
       <div className="flex flex-col items-center gap-10 w-full max-w-3xl">
         <div className="flex flex-col gap-4 w-full max-w-lg">
-          {game.state.playerStates
-            .map((ps, idx) => ({ ps, score: scores[idx] }))
-            .sort((a, b) => b.score - a.score)
-            .map(({ ps, score }, index) => (
+          {ranked.map(({ ps, score }) => (
               <div
                 key={ps.player.name}
                 className={`flex justify-between items-center p-4 md:p-5 bg-neutral-900 border rounded-xl transition-all duration-200 hover:translate-x-1 hover:border-neutral-700 ${
-                  index === 0
+                  score === topScore
                     ? "border-green-500 bg-green-500/10"
                     : "border-neutral-800"
                 }`}
@@ -208,45 +210,46 @@ export default function DisplayGamePage() {
     );
   }
 
-  // Sort players alphabetically for consistent display order
-  const sortedPlayerStates = [...game.state.playerStates].sort((a, b) =>
-    a.player.name.localeCompare(b.player.name),
-  );
+  // Rank players by current points (leader first); break ties by name for a
+  // stable display order.
+  const rankedPlayers = game.state.playerStates
+    .map((playerState) => ({
+      playerState,
+      score: currentPoints(
+        playerState.points.predicted,
+        playerState.points.actual,
+      ),
+    }))
+    .sort(
+      (a, b) =>
+        b.score - a.score ||
+        a.playerState.player.name.localeCompare(b.playerState.player.name),
+    );
 
-  // Calculate global min and max
-  const numbers = sortedPlayerStates.map((playerState) =>
+  // Global min and max across all line charts so they share one scale.
+  const numbers = rankedPlayers.map(({ playerState }) =>
     lineChartPointsValues(playerState, game.state.currentRound),
   );
   const allNumbers = numbers.flat();
   const globalMin = Math.min(...allNumbers);
   const globalMax = Math.max(...allNumbers);
 
-  // Calculate rankings based on current points
-  const playersWithScores = sortedPlayerStates.map((playerState) => ({
-    playerState,
-    score: currentPoints(
-      playerState.points.predicted,
-      playerState.points.actual,
-    ),
-  }));
-
-  // Sort by score descending to get rankings
-  const rankedPlayers = [...playersWithScores].sort(
-    (a, b) => b.score - a.score,
+  // Standard competition ranking: equal scores share a rank (e.g. 1, 1, 3).
+  const ranks = rankedPlayers.map((player, idx) =>
+    idx > 0 && player.score === rankedPlayers[idx - 1].score
+      ? -1 // placeholder, replaced below
+      : idx + 1,
   );
-
-  // Create rank map
-  const rankMap = new Map<string, number>();
-  rankedPlayers.forEach((player, index) => {
-    rankMap.set(player.playerState.player.name, index + 1);
+  ranks.forEach((rank, idx) => {
+    if (rank === -1) ranks[idx] = ranks[idx - 1];
   });
 
   if (game.state.running) {
     return (
       <div className="w-full p-10">
         <RoundInfo game={game} />
-        <div className="flex gap-5 mt-12 md:mt-16 flex-wrap md:flex-nowrap">
-          {sortedPlayerStates.map((playerState, idx) => (
+        <div className="grid gap-5 mt-12 md:mt-16 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {rankedPlayers.map(({ playerState }, idx) => (
             <StatsBlock
               playerState={playerState}
               key={playerState.player.name}
@@ -254,7 +257,7 @@ export default function DisplayGamePage() {
               globalMin={globalMin}
               globalMax={globalMax}
               allNumbers={numbers[idx]}
-              rank={rankMap.get(playerState.player.name)}
+              rank={ranks[idx]}
             />
           ))}
         </div>
