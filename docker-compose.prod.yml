@@ -1,0 +1,19 @@
+services:
+  backend:
+    image: ${IMAGE_BASE:-ghcr.io/marcjulianschwarz/wizard}-backend:latest
+    pull_policy: always # always fetch the newest :latest on `up`
+    container_name: wizard-backend
+    restart: always
+    env_file: .env
+    ports:
+      - "127.0.0.1:8010:3000"
+
+  frontend:
+    image: ${IMAGE_BASE:-ghcr.io/marcjulianschwarz/wizard}-frontend:latest
+    pull_policy: always
+    container_name: wizard-frontend
+    restart: always
+    ports:
+      - "127.0.0.1:8011:3000"
+    depends_on:
+      - backend
