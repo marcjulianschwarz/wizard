@@ -1,10 +1,9 @@
 import { type CardColor } from "@/api/entities";
 import { useSocket } from "@/api/hooks";
 import { useState } from "react";
-import RoundInfo from "@/components/RoundInfo/RoundInfo";
+import ControllerRoundInfo from "@/components/RoundInfo/ControllerRoundInfo";
 import { useParams } from "react-router";
 import PlayerOrderingView from "./views/PlayerOrderingView";
-import TrumpCardSelectionView from "./views/TrumpCardSelectionView";
 import PredictedHitsView from "./views/PredictedHitsView";
 import ActualHitsView from "./views/ActualHitsView";
 import FinalView from "./views/FinalView";
@@ -17,35 +16,21 @@ export default function ControllerGamePage() {
   useDocumentTitle("Controller");
 
   const [currentPage, setCurrentPage] = useState(0);
-  const [selectedTrump, setSelectedTrump] = useState("");
-  const [selectedConstraint, setSelectedConstraint] = useState("");
 
-  function handleColorClick(color: string, card: string) {
+  function setTrumpColor(color: CardColor) {
     if (!game) return;
+    updateGame({
+      ...game,
+      state: { ...game.state, currentTrumpCardColor: color },
+    });
+  }
 
-    if (card === "trump") {
-      const updatedGame = {
-        ...game,
-        state: {
-          ...game.state,
-          currentTrumpCardColor: color as CardColor,
-        },
-      };
-      setSelectedTrump(color + card);
-      updateGame(updatedGame);
-    }
-
-    if (card === "constraint") {
-      const updatedGame = {
-        ...game,
-        state: {
-          ...game.state,
-          currentConditionCardColor: color as CardColor,
-        },
-      };
-      setSelectedConstraint(color + card);
-      updateGame(updatedGame);
-    }
+  function setConditionColor(color: CardColor) {
+    if (!game) return;
+    updateGame({
+      ...game,
+      state: { ...game.state, currentConditionCardColor: color },
+    });
   }
 
   function handleNextPage() {
@@ -91,7 +76,6 @@ export default function ControllerGamePage() {
       },
     };
     updateGame(updatedGame);
-    setCurrentPage(3);
   }
 
   if (!game) {
@@ -100,18 +84,20 @@ export default function ControllerGamePage() {
 
   const maxRounds = 60 / game.state.playerStates.length;
 
+  // Once the game is over, drop the round UI entirely and show the final screen.
+  if (!game.state.running) {
+    return (
+      <div className="flex flex-col justify-center p-10">
+        <FinalView game={game} updateGame={updateGame} />
+      </div>
+    );
+  }
+
   const pages = [
     <PlayerOrderingView
       key="order"
       game={game}
       updateGame={updateGame}
-      onComplete={handleNextPage}
-    />,
-    <TrumpCardSelectionView
-      key="trump"
-      handleColorClick={handleColorClick}
-      selectedTrump={selectedTrump}
-      selectedConstraint={selectedConstraint}
       onComplete={handleNextPage}
     />,
     <PredictedHitsView
@@ -126,12 +112,15 @@ export default function ControllerGamePage() {
       updateGame={updateGame}
       onComplete={handleRoundDonePage}
     />,
-    <FinalView key="final" game={game} updateGame={updateGame} />,
   ];
 
   return (
     <div>
-      <RoundInfo game={game} showGameCode={true} showDashboardLink={true} />
+      <ControllerRoundInfo
+        game={game}
+        onSelectTrump={setTrumpColor}
+        onSelectCondition={setConditionColor}
+      />
       <div className="flex flex-col justify-center p-10">
         <div>{pages[currentPage]}</div>
 

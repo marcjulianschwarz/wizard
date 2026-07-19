@@ -38,10 +38,15 @@ export default function PlayerOrderingView({
   };
 
   const handleSave = () => {
-    // Reorder playerStates according to the new order
-    const reorderedPlayerStates = playerOrder.map(
-      (originalIndex) => game.state.playerStates[originalIndex],
-    );
+    // Reorder playerStates according to the new order, and stamp a fixed
+    // display order on each player so the display never re-orders the cards.
+    const reorderedPlayerStates = playerOrder.map((originalIndex, idx) => {
+      const playerState = game.state.playerStates[originalIndex];
+      return {
+        ...playerState,
+        player: { ...playerState.player, order: idx },
+      };
+    });
 
     const updatedGame: Game = {
       ...game,

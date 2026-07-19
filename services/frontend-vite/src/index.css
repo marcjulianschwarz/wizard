@@ -53,5 +53,19 @@ h6 {
     background-clip: text;
     -webkit-background-clip: text;
     color: transparent;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.3;
+    padding-block: 0.1em 0.25em;
     animation: shimmer 4s linear infinite;
+}
+
+@keyframes confetti-fall {
+    0% {
+        transform: translateY(-10%) rotateZ(0deg);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(320px) rotateZ(360deg);
+        opacity: 0;
+    }
 }

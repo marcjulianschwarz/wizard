@@ -2,7 +2,6 @@ import { EMOJI_OPTIONS } from "@/components/EmojiPicker/EmojiOptions";
 import EmojiPicker from "@/components/EmojiPicker/EmojiPicker";
 import { useState } from "react";
 import ColorButton from "@/components/ColorButton/ColorButton";
-import TrumpCardSelectionView from "../game/controller/views/TrumpCardSelectionView";
 
 function getRandomEmoji(): string {
   return EMOJI_OPTIONS[Math.floor(Math.random() * EMOJI_OPTIONS.length)];
@@ -25,7 +24,6 @@ export default function PreviewPage() {
       />
       <ColorButton color="green" />
       <ColorButton color="red" />
-      <TrumpCardSelectionView />
     </>
   );
 }

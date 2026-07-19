@@ -12,6 +12,9 @@ export interface PointsState {
 export interface Player {
   name: string;
   color: string;
+  // Fixed display order set once at the initial player ordering. Used so the
+  // display never re-orders cards even though the turn order rotates per round.
+  order?: number;
 }
 
 export interface PlayerState {
@@ -26,6 +29,8 @@ export interface GameState {
   currentTrumpCardColor?: CardColor;
   currentConditionCardColor?: CardColor;
   running: boolean;
+  // On the final screen, show the points charts instead of the celebration gif.
+  showCharts?: boolean;
 }
 
 export interface Game {

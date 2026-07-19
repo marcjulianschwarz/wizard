@@ -1,11 +1,12 @@
 import type { Game, PlayerState } from "@/api/entities";
 import { useSocket } from "@/api/hooks";
-import RoundInfo from "@/components/RoundInfo/RoundInfo";
+import DisplayRoundInfo from "@/components/RoundInfo/DisplayRoundInfo";
 import { currentPoints, lineChartPointsValues } from "@/api/utils";
 import SimpleLineChart from "@/components/SimpleLineChart/SimpleLineChart";
 import { useParams } from "react-router";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import confetti from "canvas-confetti";
 
 // Visual treatment per rank. `chart` is a hex color handed to the line chart.
 const RANK_STYLE: Record<number, { card: string; chart: string }> = {
@@ -35,7 +36,7 @@ function StatsBlock(props: {
   globalMax: number;
   allNumbers: number[];
   rank?: number;
-  isNext?: boolean;
+  chartHeight?: number;
 }) {
   const {
     playerState,
@@ -44,7 +45,7 @@ function StatsBlock(props: {
     globalMax,
     globalMin,
     rank,
-    isNext,
+    chartHeight = 300,
   } = props;
 
   const style = (rank && RANK_STYLE[rank]) || DEFAULT_RANK_STYLE;
@@ -59,9 +60,7 @@ function StatsBlock(props: {
 
   return (
     <div
-      className={`relative overflow-hidden grow p-4 border-2 rounded-xl transition-transform duration-200 hover:-translate-y-1 ${style.card} ${
-        isNext ? "ring-4 ring-blue-500 shadow-[0_0_35px_-3px_rgba(59,130,246,0.6)]" : ""
-      }`}
+      className={`relative overflow-hidden grow p-4 border-2 rounded-xl transition-transform duration-200 hover:-translate-y-1 ${style.card}`}
     >
       {/* Oversized rank number watermark */}
       {rank ? (
@@ -77,12 +76,6 @@ function StatsBlock(props: {
         <p className="text-lg md:text-xl font-semibold text-white m-0 truncate">
           {playerState.player.name}
         </p>
-        {isNext ? (
-          <span className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold uppercase tracking-wider whitespace-nowrap">
-            <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-            am Zug
-          </span>
-        ) : null}
       </div>
       {points !== null && points !== undefined ? (
         <div className="relative z-10 mb-2 flex items-baseline gap-1">
@@ -97,7 +90,10 @@ function StatsBlock(props: {
       {/* While there's a value for this round, show the big number instead of
           the chart; otherwise show the points progression chart. */}
       {predicted !== undefined ? (
-        <div className="flex items-center justify-center h-[300px]">
+        <div
+          className="flex items-center justify-center"
+          style={{ height: chartHeight }}
+        >
           <span
             className={`text-6xl md:text-7xl font-black tabular-nums tracking-tight ${
               predicted === actual ? "text-green-400" : "text-red-400"
@@ -112,15 +108,56 @@ function StatsBlock(props: {
           globalMax={globalMax}
           globalMin={globalMin}
           color={style.chart}
+          height={chartHeight}
         />
       )}
     </div>
   );
 }
 
+const CONFETTI_COLORS = [
+  "#22c55e",
+  "#a3e635",
+  "#eab308",
+  "#3b82f6",
+  "#ec4899",
+  "#f97316",
+];
+
+// Bursts confetti outward from the center of the given element (the winner's
+// name / avatar) on mount, then keeps a gentle stream going.
+function useConfetti(anchorRef: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    const fire = () => {
+      const el = anchorRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const origin = {
+        x: (rect.left + rect.width / 2) / window.innerWidth,
+        y: (rect.top + rect.height * 1.5) / window.innerHeight,
+      };
+      confetti({
+        particleCount: 80,
+        spread: 100,
+        startVelocity: 35,
+        origin,
+        colors: CONFETTI_COLORS,
+      });
+    };
+
+    fire();
+    const interval = setInterval(fire, 2500);
+    return () => clearInterval(interval);
+  }, [anchorRef]);
+}
+
 function FinalPage(props: { game: Game }) {
   const { game } = props;
   const [currentTime, setCurrentTime] = useState(() => Date.now());
+  const winnersRef = useRef<HTMLDivElement>(null);
+  const showCharts = game.state.showCharts ?? false;
+
+  useConfetti(winnersRef);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -162,70 +199,114 @@ function FinalPage(props: { game: Game }) {
   const placeMedal = (idx: number) =>
     ["🥇", "🥈", "🥉"][idx] ?? `${idx + 1}.`;
 
-  return (
-    <div className="w-full mt-20 p-5 md:p-8 flex flex-col items-center gap-10">
-      <div className="relative flex flex-col items-center gap-5">
-        {/* Soft glow behind the winners */}
-        <div className="pointer-events-none absolute -top-10 h-64 w-64 rounded-full bg-green-500/20 blur-3xl" />
-        {winners.length > 0 && (
-          <div className="relative flex gap-4">
-            {winners.map((w) => (
-              <span
-                key={w.player.name}
-                className="text-6xl md:text-8xl leading-none mt-5 animate-bounce drop-shadow-[0_0_25px_rgba(34,197,94,0.6)]"
-              >
-                {w.player.color}
-              </span>
-            ))}
-          </div>
-        )}
-        <h1 className="relative text-4xl md:text-6xl text-center font-black tracking-tight text-shimmer m-0">
-          {winnerTitle}
-        </h1>
-        <p className="text-lg md:text-xl text-neutral-400 m-0 text-center">
-          Spielzeit: {formatPlayTime(game.state.startTime, currentTime)}
-        </p>
-      </div>
+  // Shared scale so all opened charts line up.
+  const allChartNumbers = ranked.flatMap(({ ps }) =>
+    lineChartPointsValues(ps, game.state.currentRound),
+  );
+  const chartMin = allChartNumbers.length ? Math.min(...allChartNumbers) : 0;
+  const chartMax = allChartNumbers.length ? Math.max(...allChartNumbers) : 0;
 
-      <div className="flex flex-col items-center gap-10 w-full max-w-3xl">
+  // Rank for a position in `ranked` (already score-sorted), sharing a rank on
+  // ties (e.g. 1, 1, 3).
+  const rankForIndex = (idx: number) =>
+    ranked.filter((r) => r.score > ranked[idx].score).length + 1;
+
+  // The charts grid is 2 columns. Shrink each chart so all rows fit the
+  // viewport without scrolling once we go past two rows (4 players).
+  const chartRows = Math.ceil(ranked.length / 2);
+  const CARD_CHROME = 130; // padding + name + points above the chart
+  const availableChartArea = 0.85 * window.innerHeight - chartRows * CARD_CHROME;
+  const finalChartHeight = Math.max(
+    120,
+    Math.min(300, Math.floor(availableChartArea / chartRows)),
+  );
+
+  return (
+    <div className="w-full min-h-screen p-5 md:p-8 flex flex-col lg:flex-row items-center lg:items-stretch justify-center gap-8 lg:gap-40">
+      {/* Left: winners + leaderboard */}
+      <div className="flex flex-col items-center gap-8 w-full min-w-0 lg:w-1/2 lg:max-w-xl lg:justify-center">
+        <div className="relative flex flex-col items-center gap-5">
+          {/* Soft glow behind the winners */}
+          <div className="pointer-events-none absolute -top-10 h-64 w-64 rounded-full bg-green-500/20 blur-3xl" />
+          {winners.length > 0 && (
+            <div ref={winnersRef} className="relative flex gap-4">
+              {winners.map((w) => (
+                <span
+                  key={w.player.name}
+                  className="text-6xl md:text-8xl leading-none mt-5 animate-bounce drop-shadow-[0_0_25px_rgba(34,197,94,0.6)]"
+                >
+                  {w.player.color}
+                </span>
+              ))}
+            </div>
+          )}
+          <h1 className="relative text-4xl md:text-6xl leading-normal py-1 text-center font-black tracking-tight text-shimmer m-0">
+            {winnerTitle}
+          </h1>
+          <p className="text-lg md:text-xl text-neutral-400 m-0 text-center">
+            Spielzeit: {formatPlayTime(game.state.startTime, currentTime)}
+          </p>
+        </div>
+
         <div className="flex flex-col gap-4 w-full max-w-lg">
           {ranked.map(({ ps, score }, idx) => (
-              <div
-                key={ps.player.name}
-                className={`flex justify-between items-center p-4 md:p-5 border rounded-xl transition-all duration-200 hover:translate-x-1 ${
-                  score === topScore
-                    ? "border-green-500 bg-gradient-to-r from-green-500/15 to-neutral-900 shadow-[0_0_25px_-8px_rgba(34,197,94,0.6)]"
-                    : "border-neutral-800 bg-neutral-900 hover:border-neutral-700"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-xl md:text-2xl w-8 text-center leading-none tabular-nums text-neutral-400">
-                    {placeMedal(idx)}
-                  </span>
-                  <span className="text-2xl md:text-3xl leading-none">
-                    {ps.player.color}
-                  </span>
-                  <span className="text-lg md:text-xl font-medium text-white">
-                    {ps.player.name}
-                  </span>
-                </div>
-                <span
-                  className={`text-xl md:text-2xl font-bold tabular-nums ${
-                    score === topScore ? "text-green-400" : "text-neutral-200"
-                  }`}
-                >
-                  {score} pkt
+            <div
+              key={ps.player.name}
+              className={`flex justify-between items-center p-4 md:p-5 border rounded-xl ${
+                score === topScore
+                  ? "border-green-500 bg-gradient-to-r from-green-500/15 to-neutral-900 shadow-[0_0_25px_-8px_rgba(34,197,94,0.6)]"
+                  : "border-neutral-800 bg-neutral-900"
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl w-8 text-center leading-none tabular-nums text-neutral-400">
+                  {placeMedal(idx)}
+                </span>
+                <span className="text-2xl md:text-3xl leading-none">
+                  {ps.player.color}
+                </span>
+                <span className="text-lg md:text-xl font-medium text-white">
+                  {ps.player.name}
                 </span>
               </div>
-            ))}
+              <span
+                className={`text-xl md:text-2xl font-bold tabular-nums ${
+                  score === topScore ? "text-green-400" : "text-neutral-200"
+                }`}
+              >
+                {score} pkt
+              </span>
+            </div>
+          ))}
         </div>
-        <img
-          src="/IwAZ6dvvvaTtdI8SD5.webp"
-          alt="Celebration"
-          width={500}
-          height={400}
-          className="rounded-lg shadow-xl w-full md:w-auto"
-        />
+      </div>
+
+      {/* Right: celebration gif or points charts, toggled from the controller */}
+      <div className="flex items-center justify-center w-full min-w-0 lg:w-1/2 lg:h-auto">
+        {showCharts ? (
+          <div className="grid gap-4 w-full max-w-4xl p-4 grid-cols-1 sm:grid-cols-2">
+            {ranked.map(({ ps }, idx) => (
+              <StatsBlock
+                key={ps.player.name}
+                playerState={ps}
+                // Past the last round so no per-round number shows — the card
+                // renders the points progression chart instead.
+                currentRound={game.state.currentRound + 1}
+                globalMin={chartMin}
+                globalMax={chartMax}
+                allNumbers={lineChartPointsValues(ps, game.state.currentRound)}
+                rank={rankForIndex(idx)}
+                chartHeight={finalChartHeight}
+              />
+            ))}
+          </div>
+        ) : (
+          <img
+            src="/IwAZ6dvvvaTtdI8SD5.webp"
+            alt="Celebration"
+            className="rounded-lg shadow-xl w-full max-w-2xl lg:max-w-full max-h-[85vh] object-contain"
+          />
+        )}
       </div>
     </div>
   );
@@ -245,53 +326,61 @@ export default function DisplayGamePage() {
     );
   }
 
-  // Rank players by current points (leader first); break ties by name for a
-  // stable display order.
-  const rankedPlayers = game.state.playerStates
-    .map((playerState) => ({
+  // Keep the cards in their fixed initial order. The controller rotates the
+  // playerStates array every round for turn order, so we sort by the stable
+  // `player.order` stamped at the initial ordering (falls back to array order
+  // for older games that predate that field).
+  const orderedPlayers = game.state.playerStates
+    .map((playerState, idx) => ({
       playerState,
       score: currentPoints(
         playerState.points.predicted,
         playerState.points.actual,
       ),
+      order: playerState.player.order ?? idx,
     }))
-    .sort(
-      (a, b) =>
-        b.score - a.score ||
-        a.playerState.player.name.localeCompare(b.playerState.player.name),
-    );
+    .sort((a, b) => a.order - b.order);
 
   // Global min and max across all line charts so they share one scale.
-  const numbers = rankedPlayers.map(({ playerState }) =>
+  const numbers = orderedPlayers.map(({ playerState }) =>
     lineChartPointsValues(playerState, game.state.currentRound),
   );
   const allNumbers = numbers.flat();
   const globalMin = Math.min(...allNumbers);
   const globalMax = Math.max(...allNumbers);
 
-  // Standard competition ranking: equal scores share a rank (e.g. 1, 1, 3).
-  const ranks = rankedPlayers.map((player, idx) =>
-    idx > 0 && player.score === rankedPlayers[idx - 1].score
-      ? -1 // placeholder, replaced below
-      : idx + 1,
-  );
-  ranks.forEach((rank, idx) => {
-    if (rank === -1) ranks[idx] = ranks[idx - 1];
+  // Rank badge reflects the current standing by score (equal scores share a
+  // rank, e.g. 1, 1, 3), mapped back onto the fixed card order.
+  const byScore = [...orderedPlayers].sort((a, b) => b.score - a.score);
+  const rankByName = new Map<string, number>();
+  byScore.forEach((player, idx) => {
+    const rank =
+      idx > 0 && player.score === byScore[idx - 1].score
+        ? rankByName.get(byScore[idx - 1].playerState.player.name)!
+        : idx + 1;
+    rankByName.set(player.playerState.player.name, rank);
   });
-
-  // The controller predicts hits in playerStates order and saves each one
-  // immediately, so the next player up is the first one (in that order) who
-  // has no prediction for the current round yet.
-  const nextToPredict = game.state.playerStates.find(
-    (ps) => ps.points.predicted[game.state.currentRound - 1] === undefined,
+  const ranks = orderedPlayers.map(
+    ({ playerState }) => rankByName.get(playerState.player.name)!,
   );
+
+  // playerStates is rotated once per round so index 0 is the round's starting
+  // player. These stay fixed for the whole prediction phase and only change
+  // when the round rotates: "Stiche angeben" starts, "am Zug" follows.
+  const nextToPredict = game.state.playerStates[0];
+  const afterNextToPredict =
+    game.state.playerStates[1 % game.state.playerStates.length];
 
   if (game.state.running) {
     return (
       <div className="w-full p-10">
-        <RoundInfo game={game} />
+        <DisplayRoundInfo
+          game={game}
+          nextPlayer={nextToPredict?.player}
+          afterNextPlayer={afterNextToPredict?.player}
+        />
         <div className="grid gap-5 mt-12 md:mt-16 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {rankedPlayers.map(({ playerState }, idx) => (
+          {orderedPlayers.map(({ playerState }, idx) => (
             <StatsBlock
               playerState={playerState}
               key={playerState.player.name}
@@ -300,7 +389,6 @@ export default function DisplayGamePage() {
               globalMax={globalMax}
               allNumbers={numbers[idx]}
               rank={ranks[idx]}
-              isNext={playerState.player.name === nextToPredict?.player.name}
             />
           ))}
         </div>

@@ -14,6 +14,7 @@ interface SimpleLineChartProps {
   globalMin: number;
   globalMax: number;
   color?: string;
+  height?: number;
 }
 
 const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
@@ -21,12 +22,13 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
   globalMin,
   globalMax,
   color = "#8884d8",
+  height = 300,
 }) => {
   const data = numbers.map((value, index) => ({ name: index + 1, value }));
   const gradientId = React.useId();
 
   return (
-    <ResponsiveContainer height={300}>
+    <ResponsiveContainer height={height}>
       <ComposedChart data={data}>
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
