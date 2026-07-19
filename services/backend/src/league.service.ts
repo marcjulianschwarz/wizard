@@ -66,6 +66,14 @@ export class LeagueService {
     this.db.deletePlayer(playerId);
   }
 
+  deleteGame(leagueId: string, joinCode: string) {
+    const row = this.db.getGame(joinCode);
+    if (!row || row.leagueId !== leagueId) {
+      throw new NotFoundException('Game not found');
+    }
+    this.db.deleteGame(joinCode);
+  }
+
   private leagueGames(leagueId: string): Game[] {
     if (!this.db.getLeague(leagueId)) {
       throw new NotFoundException('League not found');

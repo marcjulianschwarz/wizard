@@ -67,4 +67,10 @@ export class LeagueController {
   games(@Param('id') id: string) {
     return this.leagueService.getGames(id);
   }
+
+  @Delete(':id/games/:joinCode')
+  @HttpCode(204)
+  deleteGame(@Param('id') id: string, @Param('joinCode') joinCode: string) {
+    this.leagueService.deleteGame(id, joinCode);
+  }
 }

@@ -72,3 +72,12 @@ export function getStandings(leagueId: string): Promise<Standing[]> {
 export function getLeagueGames(leagueId: string): Promise<GameSummary[]> {
   return request<GameSummary[]>(`/leagues/${leagueId}/games`);
 }
+
+export function deleteLeagueGame(
+  leagueId: string,
+  joinCode: string,
+): Promise<void> {
+  return request<void>(`/leagues/${leagueId}/games/${joinCode}`, {
+    method: "DELETE",
+  });
+}

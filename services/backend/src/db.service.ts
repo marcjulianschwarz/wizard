@@ -114,6 +114,10 @@ export class DbService implements OnModuleInit {
       .all(leagueId) as GameRow[];
   }
 
+  deleteGame(joinCode: string) {
+    this.db.prepare(`DELETE FROM Game WHERE joinCode = ?`).run(joinCode);
+  }
+
   // --- League helpers -----------------------------------------------------
 
   insertLeague(row: LeagueRow) {
