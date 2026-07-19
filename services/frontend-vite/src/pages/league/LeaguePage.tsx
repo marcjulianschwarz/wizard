@@ -20,7 +20,7 @@ import Input from "@/components/Input/Input";
 import Button from "@/components/Button/Button";
 import Hero from "@/components/Hero/Hero";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { Check, Copy, Pencil, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, Copy, Pencil, Trash2, X } from "lucide-react";
 
 function getRandomEmoji(): string {
   return EMOJI_OPTIONS[Math.floor(Math.random() * EMOJI_OPTIONS.length)];
@@ -86,11 +86,9 @@ export default function LeaguePage() {
     <main className="w-11/12 sm:w-10/12 max-w-3xl m-auto mt-10 sm:mt-20 px-2 sm:px-0 pb-20">
       <Hero title={league.name} subtitle="Liga" />
 
+      <LeagueCodePanel code={leagueId} link={window.location.href} />
+
       <div className="mt-6 flex flex-wrap gap-3">
-        <CopyLinkButton
-          label="Liga-Link kopieren"
-          value={window.location.href}
-        />
         <Button
           className="border border-[#A2BD53] bg-[#A2BD53] text-black"
           onClick={() => navigate(`/game/new?league=${leagueId}`)}
@@ -112,7 +110,28 @@ export default function LeaguePage() {
   );
 }
 
-function CopyLinkButton(props: { label: string; value: string }) {
+function LeagueCodePanel(props: { code: string; link: string }) {
+  const { code, link } = props;
+  return (
+    <div className="mt-6 rounded-xl border border-neutral-800 bg-neutral-900 p-4">
+      <p className="text-sm text-neutral-400">Liga-Code</p>
+      <p className="mt-1 text-sm text-neutral-500">
+        Der Code ist der einzige Zugang zur Liga — speichere ihn dir gut ab.
+      </p>
+      <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-3">
+        <code className="flex-1 select-all break-all rounded-lg border border-neutral-700 bg-neutral-950 px-4 py-3 text-lg font-mono tracking-wide text-white">
+          {code}
+        </code>
+        <div className="flex gap-2">
+          <CopyButton label="Code" value={code} />
+          <CopyButton label="Link" value={link} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CopyButton(props: { label: string; value: string }) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -123,7 +142,7 @@ function CopyLinkButton(props: { label: string; value: string }) {
 
   return (
     <Button
-      className="border border-neutral-700 bg-neutral-900"
+      className="border border-neutral-700 bg-neutral-900 whitespace-nowrap"
       onClick={handleCopy}
       leftIcon={copied ? <Check size={16} /> : <Copy size={16} />}
     >
@@ -192,42 +211,89 @@ function GamesList(props: {
   const { games, onOpen } = props;
   return (
     <section className="mt-10">
-      <h2 className="text-xl font-bold mb-4">Spiele ({games.length})</h2>
+      <h2 className="text-xl font-bold mb-4">Spielverlauf ({games.length})</h2>
       {games.length === 0 ? (
         <p className="text-neutral-400">Noch keine Spiele in dieser Liga.</p>
       ) : (
         <div className="space-y-2">
           {games.map((g) => (
-            <button
-              key={g.joinCode}
-              onClick={() => onOpen(g.joinCode)}
-              className="w-full flex items-center justify-between px-5 py-4 bg-neutral-900 border border-neutral-800 rounded-lg text-left transition-all duration-200 hover:bg-neutral-800 hover:translate-x-1"
-            >
-              <div>
-                <div className="text-white font-medium">
-                  {g.name?.trim() || `Spiel ${g.joinCode}`}
-                </div>
-                <div className="text-sm text-neutral-400">
-                  {formatDate(g.createdAt)} · {g.playerCount} Spieler ·{" "}
-                  {g.finished ? "Beendet" : "Läuft"}
-                </div>
-              </div>
-              {g.winner && (
-                <div className="text-right text-sm">
-                  <div className="text-neutral-400">
-                    {g.finished ? "Sieger" : "Führend"}
-                  </div>
-                  <div className="text-white">
-                    <span className="mr-1">{g.winner.color}</span>
-                    {g.winner.name} ({g.winner.points})
-                  </div>
-                </div>
-              )}
-            </button>
+            <GameHistoryItem key={g.joinCode} game={g} onOpen={onOpen} />
           ))}
         </div>
       )}
     </section>
+  );
+}
+
+function GameHistoryItem(props: {
+  game: GameSummary;
+  onOpen: (joinCode: string) => void;
+}) {
+  const { game, onOpen } = props;
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="bg-neutral-900 border border-neutral-800 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen(!open)}
+        className="w-full flex items-center justify-between px-5 py-4 text-left transition-colors hover:bg-neutral-800"
+      >
+        <div>
+          <div className="text-white font-medium">
+            {game.name?.trim() || `Spiel ${game.joinCode}`}
+          </div>
+          <div className="text-sm text-neutral-400">
+            {formatDate(game.createdAt)} · {game.playerCount} Spieler ·{" "}
+            {game.finished ? "Beendet" : "Läuft"}
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          {game.winner && (
+            <div className="text-right text-sm">
+              <div className="text-neutral-400">
+                {game.finished ? "Sieger" : "Führend"}
+              </div>
+              <div className="text-white">
+                <span className="mr-1">{game.winner.color}</span>
+                {game.winner.name} ({game.winner.points})
+              </div>
+            </div>
+          )}
+          <ChevronDown
+            size={18}
+            className={`text-neutral-500 transition-transform ${
+              open ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t border-neutral-800 px-5 py-4">
+          <ol className="space-y-1">
+            {game.scores.map((s, i) => (
+              <li
+                key={`${s.name}-${i}`}
+                className="flex items-center justify-between text-sm"
+              >
+                <span className="flex items-center gap-2">
+                  <span className="w-5 text-neutral-500">{i + 1}.</span>
+                  <span className="text-lg">{s.color}</span>
+                  <span className="text-white">{s.name}</span>
+                </span>
+                <span className="font-semibold text-white">{s.points}</span>
+              </li>
+            ))}
+          </ol>
+          <button
+            onClick={() => onOpen(game.joinCode)}
+            className="mt-4 text-sm text-[#A2BD53] hover:underline"
+          >
+            Spiel öffnen →
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 

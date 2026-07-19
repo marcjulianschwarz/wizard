@@ -78,28 +78,22 @@ export class LeagueService {
   getGames(leagueId: string): GameSummary[] {
     return this.leagueGames(leagueId).map((game) => {
       const finished = !game.state.running;
-      let winner: GameSummary['winner'];
-      let maxPoints = -Infinity;
-      for (const ps of game.state.playerStates) {
-        const points = currentPoints(
-          ps.points.predicted,
-          ps.points.actual,
-        );
-        if (points > maxPoints) {
-          maxPoints = points;
-          winner = {
-            name: ps.player.name,
-            color: ps.player.color,
-            points,
-          };
-        }
-      }
+      // Full per-player final scores, ranked high-to-low, so the league page
+      // can show a complete history of each old game (not just the winner).
+      const scores = game.state.playerStates
+        .map((ps) => ({
+          name: ps.player.name,
+          color: ps.player.color,
+          points: currentPoints(ps.points.predicted, ps.points.actual),
+        }))
+        .sort((a, b) => b.points - a.points);
       return {
         joinCode: game.joinCode,
         name: game.name,
         createdAt: game.state.startTime,
         finished,
-        winner,
+        winner: scores[0],
+        scores,
         playerCount: game.state.playerStates.length,
       };
     });

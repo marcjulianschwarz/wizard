@@ -9,6 +9,7 @@ import PreviewPage from "./pages/preview/PreviewPage.tsx";
 import ControllerGamePage from "./pages/game/controller/ControllerGamePage.tsx";
 import DisplayGamePage from "./pages/game/display/DisplayGamePage.tsx";
 import LeaguePage from "./pages/league/LeaguePage.tsx";
+import NewLeaguePage from "./pages/league/NewLeaguePage.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -21,6 +22,7 @@ createRoot(document.getElementById("root")!).render(
           element={<ControllerGamePage />}
         />
         <Route path="/game/display/:gameCode" element={<DisplayGamePage />} />
+        <Route path="/league/new" element={<NewLeaguePage />} />
         <Route path="/league/:leagueId" element={<LeaguePage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/preview" element={<PreviewPage />} />

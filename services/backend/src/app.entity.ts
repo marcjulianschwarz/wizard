@@ -75,11 +75,19 @@ export interface Standing {
   bestGame: number;
 }
 
+export interface PlayerScore {
+  name: string;
+  color: string;
+  points: number;
+}
+
 export interface GameSummary {
   joinCode: string;
   name?: string;
   createdAt: number;
   finished: boolean;
-  winner?: { name: string; color: string; points: number };
+  winner?: PlayerScore;
+  // All players' final scores, ranked high-to-low. Powers the game history.
+  scores: PlayerScore[];
   playerCount: number;
 }
