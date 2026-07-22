@@ -49,17 +49,10 @@ export default function PredictedHitsView(props: {
       };
       updateGame(updatedGame);
 
-      // Auto-advance to the next player once the value is complete. Wait for a
-      // second digit only when a valid two-digit prediction is still reachable
-      // (e.g. "1" could become "12" when the round allows it). A leading "0"
-      // can never grow into a valid prediction, so it advances immediately.
-      const canGrow =
-        newValue.length === 1 &&
-        value !== 0 &&
-        value * 10 <= game.state.currentRound;
-      if (!canGrow) {
-        advanceFrom(value);
-      }
+      // Advance immediately on a single digit. Most predictions are one digit;
+      // for the rare two-digit value, tap the player to re-select and type the
+      // second digit (which appends since the field isn't cleared yet).
+      advanceFrom(value);
     }
   };
 

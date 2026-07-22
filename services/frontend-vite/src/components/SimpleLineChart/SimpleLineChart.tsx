@@ -27,9 +27,16 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
   const data = numbers.map((value, index) => ({ name: index + 1, value }));
   const gradientId = React.useId();
 
+  // Pad the domain so the lowest/highest points don't hug the plot edges (the
+  // dip was bottoming out flush against the card). 12% of the range, or a
+  // sensible minimum when the range is tiny/flat.
+  const pad = Math.max((globalMax - globalMin) * 0.12, 5);
+
   return (
     <ResponsiveContainer height={height}>
-      <ComposedChart data={data}>
+      {/* Bottom (and small top) margin so the line/area never runs flush
+          against the card's edge. */}
+      <ComposedChart data={data} margin={{ top: 8, bottom: 12, left: 0, right: 0 }}>
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={color} stopOpacity={0.35} />
@@ -37,7 +44,7 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
           </linearGradient>
         </defs>
         <CartesianGrid stroke="#ffffff10" vertical={false} />
-        <YAxis domain={[globalMin, globalMax]} hide={true} />
+        <YAxis domain={[globalMin - pad, globalMax + pad]} hide={true} />
         <Tooltip
           contentStyle={{
             background: "#171717",

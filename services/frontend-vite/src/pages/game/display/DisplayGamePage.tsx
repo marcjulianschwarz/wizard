@@ -84,7 +84,7 @@ function StatsBlock(props: {
 
   return (
     <div
-      className={`relative overflow-hidden grow p-4 border-2 rounded-xl transition-transform duration-200 hover:-translate-y-1 ${
+      className={`relative h-full min-h-0 overflow-hidden p-4 border-2 rounded-xl ${
         showForbidden
           ? isBlocked
             ? "border-red-500 shadow-[0_0_40px_-6px_rgba(239,68,68,0.7)]"
@@ -385,9 +385,41 @@ function FinalPage(props: { game: Game }) {
   );
 }
 
+// Tracks the viewport size, updating on resize, so the board can size the
+// player cards to exactly fill the screen for any player count.
+function useWindowSize() {
+  const [size, setSize] = useState(() => ({
+    width: window.innerWidth,
+    height: window.innerHeight,
+  }));
+  useEffect(() => {
+    const onResize = () =>
+      setSize({ width: window.innerWidth, height: window.innerHeight });
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+  return size;
+}
+
+// Choose the columns×rows grid that best fills a landscape screen for `n`
+// cards: the layout whose cell aspect ratio is closest to the viewport's, with
+// no empty trailing rows beyond what's needed.
+function bestGrid(n: number, width: number, height: number) {
+  const target = width / height;
+  let best = { cols: n, rows: 1, score: Infinity };
+  for (let cols = 1; cols <= n; cols++) {
+    const rows = Math.ceil(n / cols);
+    const cellRatio = width / cols / (height / rows);
+    const score = Math.abs(Math.log(cellRatio / target));
+    if (score < best.score) best = { cols, rows, score };
+  }
+  return best;
+}
+
 export default function DisplayGamePage() {
   const { gameCode } = useParams();
   const { game, updateGame } = useSocket(gameCode);
+  const { width: winW, height: winH } = useWindowSize();
 
   useDocumentTitle("Display");
 
@@ -467,9 +499,19 @@ export default function DisplayGamePage() {
 
   const fortuneWheel = game.state.fortuneWheel;
 
+  // Grid that fills the viewport for any player count, and the per-card chart
+  // height derived from the space each row gets (card chrome subtracted).
+  const { cols, rows } = bestGrid(orderedPlayers.length, winW, winH);
+  const HEADER_H = 120; // round info bar
+  const GAP = 20; // grid gap (matches gap-5)
+  const OUTER = 48; // page padding
+  const CARD_CHROME = 120; // name + points above the chart area
+  const rowHeight = (winH - HEADER_H - OUTER - (rows - 1) * GAP) / rows;
+  const boardChartHeight = Math.max(90, Math.floor(rowHeight - CARD_CHROME));
+
   if (game.state.running) {
     return (
-      <div className="w-full p-10">
+      <div className="flex h-screen w-full flex-col overflow-hidden p-6">
         {/* One persistent black backdrop covering the charts whenever any
             pre-game screen (blackout / welcome / wheel) is active. Because it
             stays mounted across those transitions, switching between them never
@@ -623,16 +665,14 @@ export default function DisplayGamePage() {
         />
 
         <DisplayRoundInfo game={game} />
+        {/* Grid fills the remaining height; cols×rows are chosen to fit the
+            viewport for any player count, so cards never overflow into scroll. */}
         <div
-          className={`grid gap-5 mt-12 md:mt-16 grid-cols-1 sm:grid-cols-2 ${
-            // From lg up, use as many columns as players (capped at 4) so the
-            // cards always fill the width instead of leaving an empty gap.
-            {
-              1: "lg:grid-cols-1",
-              2: "lg:grid-cols-2",
-              3: "lg:grid-cols-3",
-            }[orderedPlayers.length] ?? "lg:grid-cols-3 xl:grid-cols-4"
-          }`}
+          className="mt-6 grid min-h-0 flex-1 gap-5"
+          style={{
+            gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))`,
+            gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+          }}
         >
           {orderedPlayers.map(({ playerState }, idx) => (
             <StatsBlock
@@ -644,6 +684,7 @@ export default function DisplayGamePage() {
               allNumbers={numbers[idx]}
               rank={ranks[idx]}
               roundResultTrigger={roundResultTrigger}
+              chartHeight={boardChartHeight}
               forbiddenValue={
                 playerState.player.name === lastPredictor?.player.name
                   ? forbiddenValue
