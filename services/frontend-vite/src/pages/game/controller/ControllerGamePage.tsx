@@ -173,89 +173,72 @@ export default function ControllerGamePage() {
   const showTurnControls = currentKey === "pred" || currentKey === "made";
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-2xl flex-col">
-      {/* Sticky header: round info + join code / dashboard link. */}
-      <header className="sticky top-0 z-20 border-b border-neutral-800 bg-neutral-950/80 px-5 py-4 backdrop-blur">
+    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-8">
+      {/* Compact header: round info + join code / dashboard link. */}
+      <header className="py-3">
         <ControllerRoundInfo game={game} />
       </header>
 
-      {/* Step indicator so the operator always knows where they are. */}
+      {/* Slim step indicator. */}
       <StepIndicator
         activeKey={currentKey}
         firstRound={game.state.currentRound === 1}
       />
 
-      {/* Current step, in a consistent contained panel. */}
-      <main className="flex-1 px-5 pb-40 pt-2">
-        <div className="rounded-2xl border border-neutral-800 bg-neutral-900/40 p-5">
-          {pages[currentPage]}
-        </div>
-      </main>
+      {/* Current step, in normal document flow so the page scrolls on mobile. */}
+      <main className="flex-1 pt-4">{pages[currentPage]}</main>
 
-      {/* Fixed bottom action bar: dashboard-display controls + end game. */}
-      <footer className="fixed inset-x-0 bottom-0 z-20 border-t border-neutral-800 bg-neutral-950/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-3 px-5 py-4">
-          {showTurnControls && (
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wider text-neutral-500">
-                Dashboard-Einblendung
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <TurnToggle
-                  active={game.state.turnOverlay?.kind === "predict"}
-                  icon={<Megaphone size={16} />}
-                  onClick={() => toggleTurnOverlay("predict")}
-                >
-                  Stiche angeben
-                </TurnToggle>
-                <TurnToggle
-                  active={game.state.turnOverlay?.kind === "play"}
-                  icon={<Play size={16} />}
-                  onClick={() => toggleTurnOverlay("play")}
-                >
-                  Am Zug
-                </TurnToggle>
-              </div>
-            </div>
-          )}
-
-          {/* Manual dashboard screen controls, available at any point. */}
-          <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wider text-neutral-500">
-              Dashboard-Anzeige
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              <TurnToggle
-                active={!!game.state.showWelcome}
-                icon={<Sparkles size={16} />}
-                onClick={toggleWelcome}
-              >
-                Willkommen
-              </TurnToggle>
-              <TurnToggle
-                active={!!game.state.setupBlackout}
-                icon={<MonitorOff size={16} />}
-                onClick={toggleBlackout}
-              >
-                Schwarz
-              </TurnToggle>
-            </div>
+      {/* Dashboard controls + end game, flowing under the step (not fixed). */}
+      <div className="mt-8 flex flex-col gap-2 border-t border-neutral-800 pt-4">
+        {showTurnControls && (
+          <div className="grid grid-cols-2 gap-2">
+            <TurnToggle
+              active={game.state.turnOverlay?.kind === "predict"}
+              icon={<Megaphone size={16} />}
+              onClick={() => toggleTurnOverlay("predict")}
+            >
+              Stiche
+            </TurnToggle>
+            <TurnToggle
+              active={game.state.turnOverlay?.kind === "play"}
+              icon={<Play size={16} />}
+              onClick={() => toggleTurnOverlay("play")}
+            >
+              Am Zug
+            </TurnToggle>
           </div>
+        )}
 
-          <button
-            onClick={handleFinale}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/40 bg-red-500/10 px-6 py-3 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20"
+        <div className="grid grid-cols-2 gap-2">
+          <TurnToggle
+            active={!!game.state.showWelcome}
+            icon={<Sparkles size={16} />}
+            onClick={toggleWelcome}
           >
-            {isLastRound ? "Spiel beenden" : "Spiel vorzeitig beenden"}
-          </button>
+            Willkommen
+          </TurnToggle>
+          <TurnToggle
+            active={!!game.state.setupBlackout}
+            icon={<MonitorOff size={16} />}
+            onClick={toggleBlackout}
+          >
+            Schwarz
+          </TurnToggle>
         </div>
-      </footer>
+
+        <button
+          onClick={handleFinale}
+          className="mt-1 w-full rounded-xl border border-red-500/40 bg-red-500/10 px-6 py-3 text-sm font-medium text-red-400 transition-colors active:bg-red-500/20"
+        >
+          {isLastRound ? "Spiel beenden" : "Spiel vorzeitig beenden"}
+        </button>
+      </div>
     </div>
   );
 }
 
-// Horizontal breadcrumb of the round's phases, highlighting the active one and
-// checking off completed ones. Setup-only steps are hidden past round 1.
+// Slim breadcrumb of the round's phases: icon + label, active one highlighted.
+// Setup-only steps are hidden past round 1.
 function StepIndicator({
   activeKey,
   firstRound,
@@ -267,25 +250,23 @@ function StepIndicator({
   const activeIdx = steps.findIndex((s) => s.key === activeKey);
 
   return (
-    <div className="flex items-center gap-1.5 px-5 py-4">
+    <div className="flex items-center gap-1">
       {steps.map((step, idx) => {
         const Icon = step.icon;
-        const state =
-          idx < activeIdx ? "done" : idx === activeIdx ? "active" : "todo";
+        const active = idx === activeIdx;
         return (
-          <div key={step.key} className="flex flex-1 items-center gap-1.5">
-            <div
-              className={`flex min-w-0 flex-1 items-center gap-2 rounded-lg px-3 py-2 transition-colors ${
-                state === "active"
-                  ? "bg-blue-500/15 text-blue-300 ring-1 ring-blue-500/40"
-                  : state === "done"
-                    ? "text-neutral-400"
-                    : "text-neutral-600"
-              }`}
-            >
-              <Icon size={16} className="shrink-0" />
-              <span className="truncate text-xs font-medium">{step.label}</span>
-            </div>
+          <div
+            key={step.key}
+            className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-medium transition-colors ${
+              active
+                ? "bg-blue-500/15 text-blue-300"
+                : idx < activeIdx
+                  ? "text-neutral-500"
+                  : "text-neutral-700"
+            }`}
+          >
+            <Icon size={14} className="shrink-0" />
+            {active && <span className="truncate">{step.label}</span>}
           </div>
         );
       })}
