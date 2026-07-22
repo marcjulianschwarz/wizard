@@ -3,6 +3,7 @@ import { useSocket } from "@/api/hooks";
 import DisplayRoundInfo from "@/components/RoundInfo/DisplayRoundInfo";
 import TurnOverlay from "@/components/TurnOverlay/TurnOverlay";
 import FortuneWheel from "@/components/FortuneWheel/FortuneWheel";
+import WizardWelcome from "@/components/WizardWelcome/WizardWelcome";
 import RoundPointsBadge from "@/components/RoundPointsBadge/RoundPointsBadge";
 import {
   currentPoints,
@@ -469,6 +470,39 @@ export default function DisplayGamePage() {
   if (game.state.running) {
     return (
       <div className="w-full p-10">
+        {/* Setup blackout: plain black over the charts while the controller
+            arranges the order, so the welcome fades in from black. Sits just
+            under the welcome/wheel overlays (z-40 vs z-50). */}
+        <AnimatePresence>
+          {game.state.setupBlackout && (
+            <motion.div
+              key="setup-blackout"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="fixed inset-0 z-40 bg-neutral-950"
+            />
+          )}
+        </AnimatePresence>
+
+        {/* Pre-round welcome screen: players gather around the wizard intro
+            while the controller is on the wheel step, before the first spin. */}
+        <AnimatePresence>
+          {game.state.showWelcome && !fortuneWheel && (
+            <motion.div
+              key="wizard-welcome"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0, scale: 1.05 }}
+              transition={{ duration: 0.5 }}
+              className="fixed inset-0 z-50 bg-neutral-950"
+            >
+              <WizardWelcome players={game.state.playerStates} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Pre-round fortune wheel: full-screen focus while the controller spins
             to decide who predicts first. Mirrors the same spin via broadcast
             state (targetIndex / spinNonce). */}
@@ -480,54 +514,86 @@ export default function DisplayGamePage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
-              className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-24 bg-neutral-950/95 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/95 backdrop-blur-sm"
             >
-              <div className="text-center">
-                <h1 className="text-shimmer m-0 text-5xl font-black tracking-tight md:text-6xl">
-                  Glücksrad
-                </h1>
-                <p className="mt-3 text-xl text-neutral-400">
-                  Wer beginnt die erste Runde?
-                </p>
-              </div>
-              <FortuneWheel
-                players={game.state.playerStates}
-                size={Math.min(window.innerWidth * 0.65, window.innerHeight * 0.5, 520)}
-                targetIndex={fortuneWheel.targetIndex}
-                spinNonce={fortuneWheel.spinNonce}
-                onSettled={(index) =>
-                  // The dashboard owns the spin: once it lands, report back so
-                  // the controller can reveal the result and enable "Übernehmen".
-                  updateGame({
-                    ...game,
-                    state: {
-                      ...game.state,
-                      fortuneWheel: {
-                        targetIndex: index,
-                        spinNonce: fortuneWheel.spinNonce,
-                        settled: true,
+              {/* The wheel sits centred and never shifts. On settle it eases
+                  back and dims so the winner name owns the stage. */}
+              <motion.div
+                className="flex flex-col items-center"
+                animate={{
+                  scale: fortuneWheel.settled ? 0.82 : 1,
+                  opacity: fortuneWheel.settled ? 0.35 : 1,
+                  filter: fortuneWheel.settled ? "blur(2px)" : "blur(0px)",
+                }}
+                transition={{ type: "spring", stiffness: 120, damping: 20 }}
+              >
+                <FortuneWheel
+                  players={game.state.playerStates}
+                  size={Math.min(window.innerWidth * 0.65, window.innerHeight * 0.5, 520)}
+                  targetIndex={fortuneWheel.targetIndex}
+                  spinNonce={fortuneWheel.spinNonce}
+                  onSettled={(index) =>
+                    // The dashboard owns the spin: once it lands, report back so
+                    // the controller can reveal the result and enable "Übernehmen".
+                    updateGame({
+                      ...game,
+                      state: {
+                        ...game.state,
+                        fortuneWheel: {
+                          targetIndex: index,
+                          spinNonce: fortuneWheel.spinNonce,
+                          settled: true,
+                        },
                       },
-                    },
-                  })
-                }
-              />
+                    })
+                  }
+                />
+              </motion.div>
+
+              {/* Winner reveal: absolutely centred over everything so it pops in
+                  place without nudging the wheel. */}
               <AnimatePresence>
                 {fortuneWheel.settled && (
                   <motion.div
-                    initial={{ opacity: 0, scale: 0.6, y: 12 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
-                    className="flex items-center gap-4 rounded-2xl border border-blue-500/50 bg-blue-500/10 px-8 py-5"
+                    className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-6"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    <span className="text-5xl leading-none">
+                    <motion.span
+                      className="text-8xl leading-none drop-shadow-[0_0_40px_rgba(59,130,246,0.5)] md:text-9xl"
+                      initial={{ scale: 0, rotate: -30 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 260,
+                        damping: 14,
+                        delay: 0.15,
+                      }}
+                    >
                       {game.state.playerStates[fortuneWheel.targetIndex]?.player
                         .color}
-                    </span>
-                    <span className="text-3xl font-black text-blue-300 md:text-4xl">
-                      {game.state.playerStates[fortuneWheel.targetIndex]?.player
-                        .name}{" "}
-                      beginnt!
-                    </span>
+                    </motion.span>
+                    <motion.div
+                      className="flex flex-col items-center gap-1"
+                      initial={{ opacity: 0, y: 24 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 300,
+                        damping: 22,
+                        delay: 0.3,
+                      }}
+                    >
+                      <span className="text-6xl font-black tracking-tight text-white md:text-7xl">
+                        {game.state.playerStates[fortuneWheel.targetIndex]
+                          ?.player.name}
+                      </span>
+                      <span className="text-2xl font-semibold text-blue-300 md:text-3xl">
+                        beginnt!
+                      </span>
+                    </motion.div>
                   </motion.div>
                 )}
               </AnimatePresence>

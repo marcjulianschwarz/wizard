@@ -1,6 +1,7 @@
 import type { Game, PlayerState } from "@/api/entities";
 import { AnimatePresence, motion } from "motion/react";
 import { Sparkles } from "lucide-react";
+import { useEffect } from "react";
 
 interface FortuneWheelViewProps {
   game: Game;
@@ -36,6 +37,18 @@ export default function FortuneWheelView({
   const winnerIndex = wheel?.settled ? wheel.targetIndex : null;
   const winner = winnerIndex !== null ? players[winnerIndex] : null;
 
+  // Entering the wheel step shows the welcome screen on the dashboard (players
+  // gathered for the wizard intro) until the first spin. Only flip it on if it
+  // isn't already set and no wheel is in play yet.
+  useEffect(() => {
+    if (game.state.showWelcome || game.state.fortuneWheel) return;
+    updateGame({
+      ...game,
+      state: { ...game.state, showWelcome: true },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleSpin = () => {
     if (spinning) return;
     const picked = Math.floor(Math.random() * players.length);
@@ -43,6 +56,8 @@ export default function FortuneWheelView({
       ...game,
       state: {
         ...game.state,
+        // Leave the welcome screen behind — the wheel takes over the dashboard.
+        showWelcome: false,
         fortuneWheel: {
           targetIndex: picked,
           spinNonce: (wheel?.spinNonce ?? 0) + 1,
@@ -59,8 +74,11 @@ export default function FortuneWheelView({
       state: {
         ...game.state,
         playerStates: rotateToStart(players, winnerIndex),
-        // Clear the wheel so it doesn't linger on the display.
+        // Clear the wheel + welcome + blackout so nothing lingers on the
+        // display and the game board comes back.
         fortuneWheel: undefined,
+        showWelcome: false,
+        setupBlackout: false,
       },
     });
     onComplete();

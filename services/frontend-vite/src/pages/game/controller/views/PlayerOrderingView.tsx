@@ -1,5 +1,5 @@
 import { type Game } from "@/api/entities";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
 
 interface PlayerOrderingViewProps {
@@ -16,6 +16,17 @@ export default function PlayerOrderingView({
   const [playerOrder, setPlayerOrder] = useState(
     game.state.playerStates.map((_, idx) => idx),
   );
+
+  // Entering setup blacks out the dashboard so the welcome later fades in from
+  // black rather than from the game charts.
+  useEffect(() => {
+    if (game.state.setupBlackout) return;
+    updateGame({
+      ...game,
+      state: { ...game.state, setupBlackout: true },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleMoveUp = (index: number) => {
     if (index === 0) return;

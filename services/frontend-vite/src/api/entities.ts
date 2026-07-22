@@ -47,6 +47,14 @@ export interface GameState {
   // The round number the controller last confirmed as done (via "Fertig"). The
   // display uses this to pop the round-points badges for that round.
   roundResultTrigger?: number;
+  // Pre-game setup blackout: while the controller sets the player order (before
+  // any welcome/wheel), the dashboard shows a plain black screen instead of the
+  // charts, so the welcome fades in from black. Cleared once the round starts.
+  setupBlackout?: boolean;
+  // Pre-game welcome screen on the dashboard: player icons/names gathered
+  // around a wizard intro, shown while the controller is on the wheel step
+  // before the first spin. Cleared once the wheel starts / order is confirmed.
+  showWelcome?: boolean;
   // Pre-game fortune wheel that picks who predicts first. Broadcast so the
   // display animates the same spin as the controller. `targetIndex` is the
   // playerStates index the wheel is landing on; `spinNonce` bumps on every spin
