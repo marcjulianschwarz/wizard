@@ -9,7 +9,9 @@ export interface Settings {
 }
 
 export interface PointsState {
-  predicted: number[];
+  // A cleared prediction is a hole (undefined) rather than 0, so the display can
+  // distinguish "not yet predicted" from "predicted 0".
+  predicted: (number | undefined)[];
   actual: number[];
 }
 
@@ -38,6 +40,13 @@ export interface GameState {
   running: boolean;
   // On the final screen, show the points charts instead of the celebration gif.
   showCharts?: boolean;
+  // Controls the full-screen turn overlay on the display. `kind` picks which
+  // player is announced; the overlay stays visible until the controller toggles
+  // it off (field cleared/undefined).
+  turnOverlay?: { kind: "predict" | "play" };
+  // The round number the controller last confirmed as done (via "Fertig"). The
+  // display uses this to pop the round-points badges for that round.
+  roundResultTrigger?: number;
 }
 
 export interface Game {

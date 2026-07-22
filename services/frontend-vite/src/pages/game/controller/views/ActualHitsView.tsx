@@ -43,6 +43,23 @@ export default function ActualHitsView(props: {
         },
       };
       updateGame(updatedGame);
+
+      // Auto-advance to the next player once the value is complete. Wait for a
+      // second digit only when a valid two-digit count is still reachable.
+      const canGrow =
+        newValue.length === 1 && value * 10 <= game.state.currentRound;
+      if (!canGrow) {
+        advanceFromCurrent();
+      }
+    }
+  };
+
+  const advanceFromCurrent = () => {
+    // The last player never auto-finishes the round — that stays a deliberate
+    // "Fertig" click so the results/points badges aren't fired by accident.
+    if (currentPlayerIndex < totalPlayers - 1) {
+      setCurrentPlayerIndex((prev) => prev + 1);
+      setCurrentValue("");
     }
   };
 
@@ -101,7 +118,7 @@ export default function ActualHitsView(props: {
   const isLastPlayer = currentPlayerIndex === totalPlayers - 1;
 
   return (
-    <div className="max-w-sm mx-auto mt-10">
+    <div className="w-full">
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-white">Gemachte Stiche</h2>

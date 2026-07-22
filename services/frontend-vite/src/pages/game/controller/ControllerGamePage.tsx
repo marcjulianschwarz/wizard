@@ -1,4 +1,3 @@
-import { type CardColor } from "@/api/entities";
 import { useSocket } from "@/api/hooks";
 import { useState } from "react";
 import ControllerRoundInfo from "@/components/RoundInfo/ControllerRoundInfo";
@@ -17,26 +16,21 @@ export default function ControllerGamePage() {
 
   const [currentPage, setCurrentPage] = useState(0);
 
-  function setTrumpColor(color: CardColor) {
-    if (!game) return;
-    updateGame({
-      ...game,
-      state: { ...game.state, currentTrumpCardColor: color },
-    });
-  }
-
-  function setConditionColor(color: CardColor) {
-    if (!game) return;
-    updateGame({
-      ...game,
-      state: { ...game.state, currentConditionCardColor: color },
-    });
-  }
-
   function handleNextPage() {
     if (currentPage < pages.length - 1) {
       setCurrentPage((currentPage) => currentPage + 1);
     }
+  }
+
+  function toggleTurnOverlay(kind: "predict" | "play") {
+    if (!game) return;
+    // Toggle off if this kind is already showing, otherwise show it.
+    const next =
+      game.state.turnOverlay?.kind === kind ? undefined : { kind };
+    updateGame({
+      ...game,
+      state: { ...game.state, turnOverlay: next },
+    });
   }
 
   function handleRoundDonePage() {
@@ -54,6 +48,9 @@ export default function ControllerGamePage() {
         ...game.state,
         playerStates: rotatedPlayerStates,
         currentRound: game.state.currentRound + 1,
+        // Tell the display to pop the round-points badges for the round just
+        // finished (before the increment above).
+        roundResultTrigger: game.state.currentRound,
       },
     };
     updateGame(updatedGame);
@@ -115,14 +112,33 @@ export default function ControllerGamePage() {
   ];
 
   return (
-    <div>
-      <ControllerRoundInfo
-        game={game}
-        onSelectTrump={setTrumpColor}
-        onSelectCondition={setConditionColor}
-      />
-      <div className="flex flex-col justify-center p-10">
+    <div className="w-full p-6">
+      <ControllerRoundInfo game={game} />
+      <div className="flex flex-col justify-center mt-8">
         <div>{pages[currentPage]}</div>
+
+        <div className="flex flex-wrap gap-3 mt-8">
+          <Button
+            className={`w-fit ${
+              game.state.turnOverlay?.kind === "predict"
+                ? "bg-blue-500"
+                : "bg-neutral-800"
+            }`}
+            onClick={() => toggleTurnOverlay("predict")}
+          >
+            Stiche angeben
+          </Button>
+          <Button
+            className={`w-fit ${
+              game.state.turnOverlay?.kind === "play"
+                ? "bg-blue-500"
+                : "bg-neutral-800"
+            }`}
+            onClick={() => toggleTurnOverlay("play")}
+          >
+            Am Zug
+          </Button>
+        </div>
 
         {maxRounds === game.state.currentRound ? (
           <Button className="bg-red-500 mt-12 w-fit" onClick={handleFinale}>

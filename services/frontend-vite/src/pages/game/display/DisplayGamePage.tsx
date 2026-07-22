@@ -1,10 +1,13 @@
 import type { Game, PlayerState } from "@/api/entities";
 import { useSocket } from "@/api/hooks";
 import DisplayRoundInfo from "@/components/RoundInfo/DisplayRoundInfo";
+import TurnOverlay from "@/components/TurnOverlay/TurnOverlay";
+import RoundPointsBadge from "@/components/RoundPointsBadge/RoundPointsBadge";
 import {
   currentPoints,
   lineChartPointsValues,
   forbiddenLastPrediction,
+  roundPoints,
 } from "@/api/utils";
 import SimpleLineChart from "@/components/SimpleLineChart/SimpleLineChart";
 import { useParams } from "react-router";
@@ -41,6 +44,9 @@ function StatsBlock(props: {
   allNumbers: number[];
   rank?: number;
   chartHeight?: number;
+  // Round number the controller last confirmed done; pops the round-points
+  // badge for that round.
+  roundResultTrigger?: number;
   // "Darf nicht aufgehen": value this (last-to-predict) player may not choose,
   // and whether they are being warned or have actually picked it (blocked).
   forbiddenValue?: number | null;
@@ -54,6 +60,7 @@ function StatsBlock(props: {
     globalMin,
     rank,
     chartHeight = 300,
+    roundResultTrigger,
     forbiddenValue,
     forbiddenState,
   } = props;
@@ -82,6 +89,16 @@ function StatsBlock(props: {
           : style.card
       }`}
     >
+      {/* Floating "+50 / -20" that pops when this player's round score lands. */}
+      <RoundPointsBadge
+        points={
+          roundResultTrigger !== undefined
+            ? roundPoints(playerState, roundResultTrigger)
+            : null
+        }
+        trigger={roundResultTrigger}
+      />
+
       {/* Oversized rank number watermark */}
       {rank ? (
         <span className="pointer-events-none select-none absolute top-2 right-4 text-7xl font-black text-white/5 leading-none">
@@ -144,8 +161,13 @@ function StatsBlock(props: {
         <div className="absolute inset-0 flex items-center justify-center pt-8 pointer-events-none">
           <span
             className={`text-6xl md:text-7xl font-black tabular-nums tracking-tight ${
-              predicted === actual ? "text-green-400" : "text-red-400"
+              actual === undefined
+                ? ""
+                : predicted === actual
+                  ? "text-green-400"
+                  : "text-red-400"
             }`}
+            style={actual === undefined ? { color: style.chart } : undefined}
           >
             {actual !== undefined ? actual : "—"} / {predicted}
           </span>
@@ -416,8 +438,9 @@ export default function DisplayGamePage() {
   // player. These stay fixed for the whole prediction phase and only change
   // when the round rotates: "Stiche angeben" starts, "am Zug" follows.
   const nextToPredict = game.state.playerStates[0];
-  const afterNextToPredict =
-    game.state.playerStates[1 % game.state.playerStates.length];
+
+  const overlay = game.state.turnOverlay;
+  const roundResultTrigger = game.state.roundResultTrigger;
 
   // "Darf nicht aufgehen": once all earlier players predicted, the last player
   // has one forbidden value. Warn in orange until they pick; if they actually
@@ -442,12 +465,36 @@ export default function DisplayGamePage() {
   if (game.state.running) {
     return (
       <div className="w-full p-10">
-        <DisplayRoundInfo
-          game={game}
-          nextPlayer={nextToPredict?.player}
-          afterNextPlayer={afterNextToPredict?.player}
+        {/* Full-screen turn announcement, toggled from the controller (via
+            turnOverlay). Its `kind` selects which player is shown: "predict" =
+            round starter ("gibt Stiche an"), "play" = second player who "ist am
+            Zug". */}
+        <TurnOverlay
+          visible={overlay !== undefined}
+          action={overlay?.kind === "play" ? "ist am Zug" : "gibt Stiche an"}
+          player={
+            overlay?.kind === "play"
+              ? game.state.playerStates[1 % game.state.playerStates.length]
+                  ?.player
+              : nextToPredict?.player
+          }
+          accent={
+            overlay?.kind === "play" ? "text-neutral-300" : "text-blue-300"
+          }
         />
-        <div className="grid gap-5 mt-12 md:mt-16 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+
+        <DisplayRoundInfo game={game} />
+        <div
+          className={`grid gap-5 mt-12 md:mt-16 grid-cols-1 sm:grid-cols-2 ${
+            // From lg up, use as many columns as players (capped at 4) so the
+            // cards always fill the width instead of leaving an empty gap.
+            {
+              1: "lg:grid-cols-1",
+              2: "lg:grid-cols-2",
+              3: "lg:grid-cols-3",
+            }[orderedPlayers.length] ?? "lg:grid-cols-3 xl:grid-cols-4"
+          }`}
+        >
           {orderedPlayers.map(({ playerState }, idx) => (
             <StatsBlock
               playerState={playerState}
@@ -457,6 +504,7 @@ export default function DisplayGamePage() {
               globalMax={globalMax}
               allNumbers={numbers[idx]}
               rank={ranks[idx]}
+              roundResultTrigger={roundResultTrigger}
               forbiddenValue={
                 playerState.player.name === lastPredictor?.player.name
                   ? forbiddenValue

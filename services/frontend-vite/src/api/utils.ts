@@ -50,7 +50,10 @@ export function getTimeDifference(
   };
 }
 
-export function currentPoints(predicted: number[], actual: number[]) {
+export function currentPoints(
+  predicted: (number | undefined)[],
+  actual: number[],
+) {
   const n = predicted.length;
   let total = 0;
   for (let i = 0; i < n; i += 1) {
@@ -71,6 +74,20 @@ export function currentPoints(predicted: number[], actual: number[]) {
     }
   }
   return total;
+}
+
+// Points scored in a single round (1-based). Returns null if that round is not
+// fully scored yet (missing prediction or actual). Positive = gained, negative
+// = lost — same scoring as currentPoints for one round.
+export function roundPoints(
+  playerState: PlayerState,
+  round: number,
+): number | null {
+  const predicted = playerState.points.predicted[round - 1];
+  const actual = playerState.points.actual[round - 1];
+  if (predicted === undefined || actual === undefined) return null;
+  if (predicted === actual) return 20 + predicted * 10;
+  return -Math.abs(predicted - actual) * 10;
 }
 
 export function lineChartPointsValues(

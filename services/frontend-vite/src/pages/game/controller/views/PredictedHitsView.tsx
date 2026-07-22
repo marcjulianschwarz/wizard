@@ -48,6 +48,29 @@ export default function PredictedHitsView(props: {
         },
       };
       updateGame(updatedGame);
+
+      // Auto-advance to the next player once the value is complete. Wait for a
+      // second digit only when a valid two-digit prediction is still reachable
+      // (e.g. "1" could become "12" when the round allows it).
+      const canGrow = newValue.length === 1 && value * 10 <= game.state.currentRound;
+      if (!canGrow) {
+        advanceFrom(value);
+      }
+    }
+  };
+
+  // Move to the next player, or finish the phase after the last one. `value` is
+  // the prediction just entered by the current (last) player, used to honor the
+  // "Darf nicht aufgehen" block.
+  const advanceFrom = (value: number) => {
+    const blocked =
+      isLastPlayer && forbiddenValue !== null && value === forbiddenValue;
+    if (blocked) return;
+    if (currentPlayerIndex < totalPlayers - 1) {
+      setCurrentPlayerIndex((prev) => prev + 1);
+      setCurrentValue("");
+    } else {
+      onComplete?.();
     }
   };
 
@@ -85,7 +108,7 @@ export default function PredictedHitsView(props: {
   const handleClear = () => {
     setCurrentValue("");
 
-    // Save 0 immediately
+    // Remove the prediction entirely for this player/round instead of storing 0.
     const updatedGame: Game = {
       ...game,
       state: {
@@ -98,7 +121,7 @@ export default function PredictedHitsView(props: {
                 ...ps.points,
                 predicted: [
                   ...ps.points.predicted.slice(0, game.state.currentRound - 1),
-                  0,
+                  undefined,
                   ...ps.points.predicted.slice(game.state.currentRound),
                 ],
               },
@@ -149,7 +172,7 @@ export default function PredictedHitsView(props: {
     currentValueNumber === forbiddenValue;
 
   return (
-    <div className="max-w-sm mx-auto mt-10">
+    <div className="w-full">
       {/* Header */}
       <div className="mb-6">
         <h2 className="text-xl font-semibold text-white">
@@ -163,7 +186,7 @@ export default function PredictedHitsView(props: {
           {game.state.playerStates.map((playerState, index) => {
             const displayValue =
               index === currentPlayerIndex
-                ? currentValue || "0"
+                ? currentValue || "—"
                 : (playerState.points.predicted[
                     game.state.currentRound - 1
                   ]?.toString() ?? "—");
