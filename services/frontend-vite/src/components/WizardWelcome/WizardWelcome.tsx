@@ -1,10 +1,31 @@
 import type { PlayerState } from "@/api/entities";
-import { motion } from "motion/react";
-import { useState } from "react";
+import { motion, type Variants } from "motion/react";
+import { useEffect, useRef, useState } from "react";
 
 interface WizardWelcomeProps {
   players: PlayerState[];
 }
+
+// Entrance-only fade/scale for the ring avatars. Position is handled separately
+// (a plain x/y animate on a wrapper) so it never re-runs this. The stagger delay
+// only applies on first mount; a reorder keeps the same `show` target so the
+// avatar doesn't re-fade.
+const AVATAR_VARIANTS: Variants = {
+  hidden: { opacity: 0, scale: 0.2 },
+  show: ({ idx, firstMount }: { idx: number; firstMount: boolean }) => ({
+    opacity: 1,
+    scale: 1,
+    transition: {
+      opacity: { duration: 0.4, delay: firstMount ? 0.4 + idx * 0.15 : 0 },
+      scale: {
+        type: "spring",
+        stiffness: 160,
+        damping: 16,
+        delay: firstMount ? 0.4 + idx * 0.15 : 0,
+      },
+    },
+  }),
+};
 
 // A single twinkling sparkle that jumps to a fresh random spot, size and timing
 // each time it finishes a fade cycle — so they never settle into a fixed
@@ -54,6 +75,13 @@ export default function WizardWelcome({ players }: WizardWelcomeProps) {
     320,
     Math.max(200, 640 / Math.max(players.length, 1)) + 120,
   );
+
+  // True only for the very first render so the entrance stagger plays once;
+  // later reorders animate position without the delayed fade.
+  const firstMount = useRef(true);
+  useEffect(() => {
+    firstMount.current = false;
+  }, []);
 
   return (
     <div className="relative flex h-full w-full items-center justify-center overflow-hidden">
@@ -107,26 +135,24 @@ export default function WizardWelcome({ players }: WizardWelcomeProps) {
         const x = Math.cos(angle) * ringRadius;
         const y = Math.sin(angle) * ringRadius;
         return (
+          // Outer wrapper owns POSITION only: a plain x/y animate that springs
+          // to the latest ring point. Motion diffs these numbers, so unchanged
+          // coords don't restart — reordering glides smoothly with no stutter.
           <motion.div
             key={ps.player.name}
-            className="absolute z-20 flex flex-col items-center gap-2"
-            style={{ left: "50%", top: "50%" }}
-            initial={{ opacity: 0, x: 0, y: 0, scale: 0.2 }}
-            animate={{
-              opacity: 1,
-              x: x - 0,
-              y: y - 0,
-              scale: 1,
-            }}
-            transition={{
-              type: "spring",
-              stiffness: 160,
-              damping: 16,
-              delay: 0.4 + idx * 0.15,
-            }}
+            className="absolute left-1/2 top-1/2 z-20"
+            animate={{ x, y }}
+            transition={{ type: "spring", stiffness: 200, damping: 26 }}
           >
-            {/* Keep each card centred on its ring point. */}
-            <div className="flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2">
+            {/* Inner wrapper owns the ENTRANCE fade/scale (once, staggered) and
+                centres the card on its ring point. */}
+            <motion.div
+              className="flex -translate-x-1/2 -translate-y-1/2 flex-col items-center gap-2"
+              variants={AVATAR_VARIANTS}
+              custom={{ idx, firstMount: firstMount.current }}
+              initial="hidden"
+              animate="show"
+            >
               <motion.span
                 className="text-6xl leading-none drop-shadow-[0_0_20px_rgba(59,130,246,0.4)] md:text-7xl"
                 animate={{ y: [0, -8, 0] }}
@@ -134,7 +160,6 @@ export default function WizardWelcome({ players }: WizardWelcomeProps) {
                   duration: 3,
                   repeat: Infinity,
                   ease: "easeInOut",
-                  delay: idx * 0.3,
                 }}
               >
                 {ps.player.color}
@@ -142,7 +167,7 @@ export default function WizardWelcome({ players }: WizardWelcomeProps) {
               <span className="rounded-full border border-neutral-700 bg-neutral-900/80 px-4 py-1 text-lg font-semibold text-white shadow-lg backdrop-blur-sm md:text-xl">
                 {ps.player.name}
               </span>
-            </div>
+            </motion.div>
           </motion.div>
         );
       })}

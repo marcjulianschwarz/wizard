@@ -470,18 +470,21 @@ export default function DisplayGamePage() {
   if (game.state.running) {
     return (
       <div className="w-full p-10">
-        {/* Setup blackout: plain black over the charts while the controller
-            arranges the order, so the welcome fades in from black. Sits just
-            under the welcome/wheel overlays (z-40 vs z-50). */}
+        {/* One persistent black backdrop covering the charts whenever any
+            pre-game screen (blackout / welcome / wheel) is active. Because it
+            stays mounted across those transitions, switching between them never
+            reveals the charts underneath — only the content on top cross-fades. */}
         <AnimatePresence>
-          {game.state.setupBlackout && (
+          {(game.state.setupBlackout ||
+            game.state.showWelcome ||
+            fortuneWheel) && (
             <motion.div
-              key="setup-blackout"
+              key="pregame-backdrop"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
-              className="fixed inset-0 z-40 bg-neutral-950"
+              className="fixed inset-0 z-40 bg-black"
             />
           )}
         </AnimatePresence>
@@ -496,7 +499,7 @@ export default function DisplayGamePage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0, scale: 1.05 }}
               transition={{ duration: 0.5 }}
-              className="fixed inset-0 z-50 bg-neutral-950"
+              className="fixed inset-0 z-50"
             >
               <WizardWelcome players={game.state.playerStates} />
             </motion.div>
@@ -514,7 +517,7 @@ export default function DisplayGamePage() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
-              className="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/95 backdrop-blur-sm"
+              className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
             >
               {/* The wheel sits centred and never shifts. On settle it eases
                   back and dims so the winner name owns the stage. */}

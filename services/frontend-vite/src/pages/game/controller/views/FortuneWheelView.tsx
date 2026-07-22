@@ -86,12 +86,9 @@ export default function FortuneWheelView({
 
   return (
     <div className="flex flex-col items-center">
-      <div className="mb-6 text-center">
-        <h2 className="mb-2 text-xl font-semibold text-white">Glücksrad</h2>
-        <p className="text-sm text-neutral-400">
-          Dreh das Rad auf dem Dashboard – wer beginnt zuerst?
-        </p>
-      </div>
+      <p className="mb-6 text-center text-sm text-neutral-400">
+        Dreh das Rad auf dem Dashboard – wer beginnt zuerst?
+      </p>
 
       {/* Spin-in-progress / result feedback (the actual wheel is on the display). */}
       <div className="mb-6 flex h-20 w-full items-center justify-center">
