@@ -2,6 +2,7 @@ import type { Game, PlayerState } from "@/api/entities";
 import { useSocket } from "@/api/hooks";
 import DisplayRoundInfo from "@/components/RoundInfo/DisplayRoundInfo";
 import TurnOverlay from "@/components/TurnOverlay/TurnOverlay";
+import FortuneWheel from "@/components/FortuneWheel/FortuneWheel";
 import RoundPointsBadge from "@/components/RoundPointsBadge/RoundPointsBadge";
 import {
   currentPoints,
@@ -13,6 +14,7 @@ import SimpleLineChart from "@/components/SimpleLineChart/SimpleLineChart";
 import { useParams } from "react-router";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useState, useEffect, useRef } from "react";
+import { AnimatePresence, motion } from "motion/react";
 import confetti from "canvas-confetti";
 
 // Visual treatment per rank. `chart` is a hex color handed to the line chart.
@@ -384,7 +386,7 @@ function FinalPage(props: { game: Game }) {
 
 export default function DisplayGamePage() {
   const { gameCode } = useParams();
-  const { game } = useSocket(gameCode);
+  const { game, updateGame } = useSocket(gameCode);
 
   useDocumentTitle("Display");
 
@@ -462,9 +464,77 @@ export default function DisplayGamePage() {
           ? "warn"
           : null;
 
+  const fortuneWheel = game.state.fortuneWheel;
+
   if (game.state.running) {
     return (
       <div className="w-full p-10">
+        {/* Pre-round fortune wheel: full-screen focus while the controller spins
+            to decide who predicts first. Mirrors the same spin via broadcast
+            state (targetIndex / spinNonce). */}
+        <AnimatePresence>
+          {fortuneWheel && (
+            <motion.div
+              key="fortune-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+              className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-24 bg-neutral-950/95 backdrop-blur-sm"
+            >
+              <div className="text-center">
+                <h1 className="text-shimmer m-0 text-5xl font-black tracking-tight md:text-6xl">
+                  Glücksrad
+                </h1>
+                <p className="mt-3 text-xl text-neutral-400">
+                  Wer beginnt die erste Runde?
+                </p>
+              </div>
+              <FortuneWheel
+                players={game.state.playerStates}
+                size={Math.min(window.innerWidth * 0.65, window.innerHeight * 0.5, 520)}
+                targetIndex={fortuneWheel.targetIndex}
+                spinNonce={fortuneWheel.spinNonce}
+                onSettled={(index) =>
+                  // The dashboard owns the spin: once it lands, report back so
+                  // the controller can reveal the result and enable "Übernehmen".
+                  updateGame({
+                    ...game,
+                    state: {
+                      ...game.state,
+                      fortuneWheel: {
+                        targetIndex: index,
+                        spinNonce: fortuneWheel.spinNonce,
+                        settled: true,
+                      },
+                    },
+                  })
+                }
+              />
+              <AnimatePresence>
+                {fortuneWheel.settled && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.6, y: 12 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ type: "spring", stiffness: 400, damping: 20 }}
+                    className="flex items-center gap-4 rounded-2xl border border-blue-500/50 bg-blue-500/10 px-8 py-5"
+                  >
+                    <span className="text-5xl leading-none">
+                      {game.state.playerStates[fortuneWheel.targetIndex]?.player
+                        .color}
+                    </span>
+                    <span className="text-3xl font-black text-blue-300 md:text-4xl">
+                      {game.state.playerStates[fortuneWheel.targetIndex]?.player
+                        .name}{" "}
+                      beginnt!
+                    </span>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Full-screen turn announcement, toggled from the controller (via
             turnOverlay). Its `kind` selects which player is shown: "predict" =
             round starter ("gibt Stiche an"), "play" = second player who "ist am

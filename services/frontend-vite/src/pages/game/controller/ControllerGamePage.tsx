@@ -3,6 +3,7 @@ import { useState } from "react";
 import ControllerRoundInfo from "@/components/RoundInfo/ControllerRoundInfo";
 import { useParams } from "react-router";
 import PlayerOrderingView from "./views/PlayerOrderingView";
+import FortuneWheelView from "./views/FortuneWheelView";
 import PredictedHitsView from "./views/PredictedHitsView";
 import ActualHitsView from "./views/ActualHitsView";
 import FinalView from "./views/FinalView";
@@ -54,7 +55,9 @@ export default function ControllerGamePage() {
       },
     };
     updateGame(updatedGame);
-    setCurrentPage(1); // Skip player ordering view for subsequent rounds
+    // Skip player ordering + fortune wheel for subsequent rounds; jump straight
+    // to the prediction view.
+    setCurrentPage(2);
   }
 
   function handleFinale() {
@@ -93,6 +96,12 @@ export default function ControllerGamePage() {
   const pages = [
     <PlayerOrderingView
       key="order"
+      game={game}
+      updateGame={updateGame}
+      onComplete={handleNextPage}
+    />,
+    <FortuneWheelView
+      key="wheel"
       game={game}
       updateGame={updateGame}
       onComplete={handleNextPage}

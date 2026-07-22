@@ -51,8 +51,12 @@ export default function PredictedHitsView(props: {
 
       // Auto-advance to the next player once the value is complete. Wait for a
       // second digit only when a valid two-digit prediction is still reachable
-      // (e.g. "1" could become "12" when the round allows it).
-      const canGrow = newValue.length === 1 && value * 10 <= game.state.currentRound;
+      // (e.g. "1" could become "12" when the round allows it). A leading "0"
+      // can never grow into a valid prediction, so it advances immediately.
+      const canGrow =
+        newValue.length === 1 &&
+        value !== 0 &&
+        value * 10 <= game.state.currentRound;
       if (!canGrow) {
         advanceFrom(value);
       }

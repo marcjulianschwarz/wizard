@@ -52,7 +52,7 @@ export function getTimeDifference(
 
 export function currentPoints(
   predicted: (number | undefined)[],
-  actual: number[],
+  actual: (number | undefined)[],
 ) {
   const n = predicted.length;
   let total = 0;

@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, type Variants } from "motion/react";
 import { type Player } from "@/api/entities";
 
 interface TurnOverlayProps {
@@ -11,7 +11,7 @@ interface TurnOverlayProps {
 }
 
 // A springy pop for children, staggered so emoji → name → action cascade in.
-const container = {
+const container: Variants = {
   hidden: { opacity: 0 },
   show: {
     opacity: 1,
@@ -19,7 +19,7 @@ const container = {
   },
 };
 
-const item = {
+const item: Variants = {
   hidden: { opacity: 0, scale: 0.6, y: 20 },
   show: {
     opacity: 1,

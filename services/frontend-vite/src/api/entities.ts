@@ -47,6 +47,15 @@ export interface GameState {
   // The round number the controller last confirmed as done (via "Fertig"). The
   // display uses this to pop the round-points badges for that round.
   roundResultTrigger?: number;
+  // Pre-game fortune wheel that picks who predicts first. Broadcast so the
+  // display animates the same spin as the controller. `targetIndex` is the
+  // playerStates index the wheel is landing on; `spinNonce` bumps on every spin
+  // so the display re-triggers the animation even for a repeat target.
+  fortuneWheel?: {
+    targetIndex: number;
+    spinNonce: number;
+    settled: boolean;
+  };
 }
 
 export interface Game {
