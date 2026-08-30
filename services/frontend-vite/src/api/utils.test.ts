@@ -4,6 +4,7 @@ import {
   currentPoints,
   forbiddenLastPrediction,
   lineChartPointsValues,
+  rankTrends,
   roundPoints,
 } from "./utils";
 
@@ -80,6 +81,46 @@ describe("roundPoints", () => {
   it("returns null when the round is not fully scored", () => {
     expect(roundPoints(ps([undefined], []), 1)).toBeNull();
     expect(roundPoints(ps([2], []), 1)).toBeNull();
+  });
+});
+
+describe("rankTrends", () => {
+  const player = (
+    name: string,
+    predicted: number[],
+    actual: number[],
+  ): PlayerState => ({
+    player: { name, color: "🎩" },
+    points: { predicted, actual },
+  });
+
+  it("reports who climbed and who dropped over the round", () => {
+    // After R1: B=30 (rank 1), A=20 (rank 2).
+    // After R2: A=60 (rank 1), B=20 (rank 2) — they swap.
+    const a = player("A", [0, 2], [0, 2]);
+    const b = player("B", [1, 1], [1, 0]);
+    const trends = rankTrends([a, b], 2);
+    expect(trends.get("A")).toBe(1); // 2nd -> 1st
+    expect(trends.get("B")).toBe(-1); // 1st -> 2nd
+  });
+
+  it("is all zeros for round 1 (no prior standing)", () => {
+    const a = player("A", [0], [0]);
+    const b = player("B", [1], [1]);
+    const trends = rankTrends([a, b], 1);
+    expect(trends.get("A")).toBe(0);
+    expect(trends.get("B")).toBe(0);
+  });
+
+  it("reports 0 for a player whose rank held", () => {
+    // A leads both rounds; C stays last. Only the middle can move.
+    const a = player("A", [2, 2], [2, 2]); // 40, then 80
+    const b = player("B", [1, 1], [1, 1]); // 30, then 60
+    const c = player("C", [0, 0], [0, 0]); // 20, then 40
+    const trends = rankTrends([a, b, c], 2);
+    expect(trends.get("A")).toBe(0);
+    expect(trends.get("B")).toBe(0);
+    expect(trends.get("C")).toBe(0);
   });
 });
 

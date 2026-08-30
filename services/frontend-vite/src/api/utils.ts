@@ -102,3 +102,54 @@ export function lineChartPointsValues(
   }
   return numbers;
 }
+
+// Rank each player (1 = best) by their total after the first `roundsScored`
+// rounds. Ties share a rank (e.g. 1, 1, 3). Returns a name→rank map. Used to
+// compare standings across rounds for the trend indicator.
+function rankByNameAfter(
+  playerStates: PlayerState[],
+  roundsScored: number,
+): Map<string, number> {
+  const scored = playerStates.map((ps) => ({
+    name: ps.player.name,
+    score: currentPoints(
+      ps.points.predicted.slice(0, roundsScored),
+      ps.points.actual.slice(0, roundsScored),
+    ),
+  }));
+  scored.sort((a, b) => b.score - a.score);
+
+  const ranks = new Map<string, number>();
+  scored.forEach((entry, idx) => {
+    const rank =
+      idx > 0 && entry.score === scored[idx - 1].score
+        ? ranks.get(scored[idx - 1].name)!
+        : idx + 1;
+    ranks.set(entry.name, rank);
+  });
+  return ranks;
+}
+
+// How each player's rank moved from the round before `round` to after it.
+// Positive = climbed (rank number went down), negative = dropped, 0 = held.
+// Returns a name→delta map. `round` is 1-based (the round that just finished);
+// there is no trend for round 1 (no prior standing), so it returns all zeros.
+export function rankTrends(
+  playerStates: PlayerState[],
+  round: number,
+): Map<string, number> {
+  const trends = new Map<string, number>();
+  if (round < 2) {
+    for (const ps of playerStates) trends.set(ps.player.name, 0);
+    return trends;
+  }
+  const before = rankByNameAfter(playerStates, round - 1);
+  const after = rankByNameAfter(playerStates, round);
+  for (const ps of playerStates) {
+    const name = ps.player.name;
+    const prev = before.get(name) ?? 0;
+    const curr = after.get(name) ?? 0;
+    trends.set(name, prev - curr);
+  }
+  return trends;
+}

@@ -11,7 +11,9 @@ import {
   lineChartPointsValues,
   forbiddenLastPrediction,
   roundPoints,
+  rankTrends,
 } from "@/api/utils";
+import RankTrend from "@/components/RankTrend/RankTrend";
 import SimpleLineChart from "@/components/SimpleLineChart/SimpleLineChart";
 import { useParams } from "react-router";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -51,6 +53,8 @@ function StatsBlock(props: {
   // Round number the controller last confirmed done; pops the round-points
   // badge for that round.
   roundResultTrigger?: number;
+  // How many rank places this player moved in the just-confirmed round (>0 up).
+  rankDelta?: number;
   // "Darf nicht aufgehen": value this (last-to-predict) player may not choose,
   // and whether they are being warned or have actually picked it (blocked).
   forbiddenValue?: number | null;
@@ -65,6 +69,7 @@ function StatsBlock(props: {
     rank,
     chartHeight = 300,
     roundResultTrigger,
+    rankDelta = 0,
     forbiddenValue,
     forbiddenState,
   } = props;
@@ -140,6 +145,7 @@ function StatsBlock(props: {
           <span className="text-sm text-neutral-400 uppercase tracking-wider">
             pkt
           </span>
+          <RankTrend delta={rankDelta} trigger={roundResultTrigger} />
         </div>
       ) : null}
       {/* "Darf nicht aufgehen": orange warns, red = value was picked. Replaces
@@ -484,6 +490,13 @@ export default function DisplayGamePage() {
     ({ playerState }) => rankByName.get(playerState.player.name)!,
   );
 
+  // Rank movement across the just-confirmed round, so each card can show a
+  // subtle up/down trend arrow. Only meaningful once a round has been confirmed.
+  const trendByName =
+    game.state.roundResultTrigger !== undefined
+      ? rankTrends(game.state.playerStates, game.state.roundResultTrigger)
+      : undefined;
+
   // playerStates is rotated once per round so index 0 is the round's starting
   // player. These stay fixed for the whole prediction phase and only change
   // when the round rotates: "Stiche angeben" starts, "am Zug" follows.
@@ -699,6 +712,7 @@ export default function DisplayGamePage() {
               allNumbers={numbers[idx]}
               rank={ranks[idx]}
               roundResultTrigger={roundResultTrigger}
+              rankDelta={trendByName?.get(playerState.player.name) ?? 0}
               chartHeight={boardChartHeight}
               forbiddenValue={
                 playerState.player.name === lastPredictor?.player.name
