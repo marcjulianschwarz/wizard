@@ -2,6 +2,7 @@ import type { Game } from "@/api/entities";
 import { useState } from "react";
 import PlayerListItem from "@/components/PlayerListItem/PlayerListItem";
 import NumberPad from "@/components/NumberPad/NumberPad";
+import { setActual, tricksEntryOutcome } from "@/game/loop";
 
 export default function ActualHitsView(props: {
   game: Game;
@@ -20,35 +21,24 @@ export default function ActualHitsView(props: {
       setCurrentValue(newValue);
 
       const value = parseInt(newValue);
-      const updatedGame: Game = {
-        ...game,
-        state: {
-          ...game.state,
-          playerStates: game.state.playerStates.map((ps, index) => {
-            if (index === currentPlayerIndex) {
-              return {
-                ...ps,
-                points: {
-                  ...ps.points,
-                  actual: [
-                    ...ps.points.actual.slice(0, game.state.currentRound - 1),
-                    value,
-                    ...ps.points.actual.slice(game.state.currentRound),
-                  ],
-                },
-              };
-            }
-            return ps;
-          }),
-        },
-      };
-      updateGame(updatedGame);
+      updateGame(
+        setActual(game, {
+          playerName: game.state.playerStates[currentPlayerIndex].player.name,
+          value,
+        }),
+      );
 
-      // Auto-advance to the next player once the value is complete. Wait for a
-      // second digit only when a valid two-digit count is still reachable.
-      const canGrow =
-        newValue.length === 1 && value * 10 <= game.state.currentRound;
-      if (!canGrow) {
+      // Auto-advance once the value is complete. The module decides whether to
+      // wait for a possible second digit or move on (and never auto-finishes on
+      // the last player).
+      const outcome = tricksEntryOutcome({
+        value,
+        digitsEntered: newValue.length,
+        playerIndex: currentPlayerIndex,
+        totalPlayers,
+        maxTricks: game.state.currentRound,
+      });
+      if (outcome.kind === "advance") {
         advanceFromCurrent();
       }
     }
@@ -69,29 +59,12 @@ export default function ActualHitsView(props: {
 
     if (newValue) {
       const value = parseInt(newValue);
-      const updatedGame: Game = {
-        ...game,
-        state: {
-          ...game.state,
-          playerStates: game.state.playerStates.map((ps, index) => {
-            if (index === currentPlayerIndex) {
-              return {
-                ...ps,
-                points: {
-                  ...ps.points,
-                  actual: [
-                    ...ps.points.actual.slice(0, game.state.currentRound - 1),
-                    value,
-                    ...ps.points.actual.slice(game.state.currentRound),
-                  ],
-                },
-              };
-            }
-            return ps;
-          }),
-        },
-      };
-      updateGame(updatedGame);
+      updateGame(
+        setActual(game, {
+          playerName: game.state.playerStates[currentPlayerIndex].player.name,
+          value,
+        }),
+      );
     }
   };
 

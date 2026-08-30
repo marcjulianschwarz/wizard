@@ -3,7 +3,6 @@ import {
   type Game,
   type LeaguePlayer,
   type Player,
-  type PlayerState,
 } from "@/api/entities";
 import { useSocket } from "@/api/hooks";
 import {
@@ -11,6 +10,7 @@ import {
   createLeague,
   getLeague,
 } from "@/api/leagues";
+import { createGame as buildGameState } from "@/game/loop";
 import EmojiPicker from "@/components/EmojiPicker/EmojiPicker";
 import PlayerCard from "@/components/PlayerCard/PlayerCard";
 import { useNavigate, useSearchParams } from "react-router";
@@ -42,21 +42,7 @@ function buildGame(props: {
   leagueId?: string;
 }): Game {
   const { code, players, mustNotAddUp, leagueId } = props;
-  return {
-    name: "",
-    joinCode: code,
-    leagueId,
-    settings: { mustNotAddUp },
-    state: {
-      startTime: Date.now(),
-      currentRound: 1,
-      running: true,
-      playerStates: players.map<PlayerState>((player) => ({
-        player,
-        points: { predicted: [], actual: [] },
-      })),
-    },
-  };
+  return buildGameState({ joinCode: code, players, mustNotAddUp, leagueId });
 }
 
 export default function NewGamePage() {

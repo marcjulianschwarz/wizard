@@ -96,9 +96,9 @@ export function lineChartPointsValues(
 ) {
   const numbers = [];
   for (let i = 0; i < currentRound; i++) {
-    const actual = playerState.points.actual.slice(0, i);
     const predicted = playerState.points.predicted.slice(0, i);
-    numbers.push(currentPoints(actual, predicted));
+    const actual = playerState.points.actual.slice(0, i);
+    numbers.push(currentPoints(predicted, actual));
   }
   return numbers;
 }

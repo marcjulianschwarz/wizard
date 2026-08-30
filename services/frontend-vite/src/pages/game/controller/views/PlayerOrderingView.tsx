@@ -1,6 +1,7 @@
 import { type Game } from "@/api/entities";
 import { useEffect, useState } from "react";
 import { ChevronUp, ChevronDown } from "lucide-react";
+import { reorderPlayers } from "@/game/loop";
 
 interface PlayerOrderingViewProps {
   game: Game;
@@ -28,26 +29,12 @@ export default function PlayerOrderingView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Reorder playerStates by `order` and stamp a fixed display order on each
-  // player so the display can render them in this exact sequence.
-  const reorder = (order: number[]) =>
-    order.map((originalIndex, idx) => {
-      const playerState = game.state.playerStates[originalIndex];
-      return {
-        ...playerState,
-        player: { ...playerState.player, order: idx },
-      };
-    });
-
   // Commit an order change to broadcast state immediately so the dashboard
   // (welcome ring, cards) reflects reordering live, not just on "Übernehmen".
   // After broadcasting, playerStates is already in the new sequence, so the
   // local index order resets to identity to stay aligned with it.
   const applyOrder = (newOrder: number[]) => {
-    updateGame({
-      ...game,
-      state: { ...game.state, playerStates: reorder(newOrder) },
-    });
+    updateGame(reorderPlayers(game, newOrder));
     setPlayerOrder(newOrder.map((_, idx) => idx));
   };
 
@@ -72,10 +59,7 @@ export default function PlayerOrderingView({
   };
 
   const handleSave = () => {
-    updateGame({
-      ...game,
-      state: { ...game.state, playerStates: reorder(playerOrder) },
-    });
+    updateGame(reorderPlayers(game, playerOrder));
     onComplete();
   };
 

@@ -8,6 +8,7 @@ import PredictedHitsView from "./views/PredictedHitsView";
 import ActualHitsView from "./views/ActualHitsView";
 import FinalView from "./views/FinalView";
 import CorrectionPanel from "./views/CorrectionPanel";
+import { endGame, finishRound } from "@/game/loop";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
   ListOrdered,
@@ -32,6 +33,8 @@ export default function ControllerGamePage() {
   useDocumentTitle("Controller");
 
   const [currentPage, setCurrentPage] = useState(0);
+  // Why the last "Fertig" was refused (incomplete/illegal round), or null.
+  const [roundError, setRoundError] = useState<string | null>(null);
 
   function handleNextPage() {
     if (currentPage < pages.length - 1) {
@@ -82,25 +85,16 @@ export default function ControllerGamePage() {
 
   function handleRoundDonePage() {
     if (!game) return;
-
-    // Rotate player order for next round (move first player to end)
-    const rotatedPlayerStates = [
-      ...game.state.playerStates.slice(1),
-      game.state.playerStates[0],
-    ];
-
-    const updatedGame = {
-      ...game,
-      state: {
-        ...game.state,
-        playerStates: rotatedPlayerStates,
-        currentRound: game.state.currentRound + 1,
-        // Tell the display to pop the round-points badges for the round just
-        // finished (before the increment above).
-        roundResultTrigger: game.state.currentRound,
-      },
-    };
-    updateGame(updatedGame);
+    // finishRound validates the round first: it rotates the turn order, advances
+    // the round, and stamps roundResultTrigger — but only if the round is
+    // complete and legal. A bad round is refused and surfaced, never committed.
+    const result = finishRound(game);
+    if (!result.ok) {
+      setRoundError(result.errors.join("\n"));
+      return;
+    }
+    setRoundError(null);
+    updateGame(result.game);
     // Skip player ordering + fortune wheel for subsequent rounds; jump straight
     // to the prediction view.
     setCurrentPage(2);
@@ -114,14 +108,7 @@ export default function ControllerGamePage() {
         : "Möchtest du das Spiel wirklich vorzeitig beenden?",
     );
     if (!confirmed) return;
-    const updatedGame = {
-      ...game,
-      state: {
-        ...game.state,
-        running: false,
-      },
-    };
-    updateGame(updatedGame);
+    updateGame(endGame(game));
   }
 
   if (!game) {
@@ -188,6 +175,13 @@ export default function ControllerGamePage() {
 
       {/* Current step, in normal document flow so the page scrolls on mobile. */}
       <main className="flex-1 pt-4">{pages[currentPage]}</main>
+
+      {/* Why the round could not be finished (missing values / forbidden pick). */}
+      {roundError && (
+        <div className="mt-4 whitespace-pre-line rounded-xl border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-400">
+          {roundError}
+        </div>
+      )}
 
       {/* Dashboard controls + end game, flowing under the step (not fixed). */}
       <div className="mt-8 flex flex-col gap-2 border-t border-neutral-800 pt-4">

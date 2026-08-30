@@ -1,12 +1,13 @@
 import type { Game, PlayerState } from "@/api/entities";
-import { currentPoints } from "@/api/utils";
+import {
+  maxRounds as maxRoundsFor,
+  playerScore,
+  setActual,
+  setCurrentRound as setRound,
+  setPrediction,
+} from "@/game/loop";
 import { useState } from "react";
 import { ChevronDown, Wrench } from "lucide-react";
-
-// Number of rounds the game runs, derived the same way as the controller.
-function maxRoundsFor(game: Game): number {
-  return 60 / game.state.playerStates.length;
-}
 
 // Parse a text field into a round value: empty clears (undefined for
 // predictions, which allows a hole), otherwise a clamped non-negative integer.
@@ -16,19 +17,6 @@ function parseRoundValue(raw: string): number | undefined {
   const n = parseInt(trimmed, 10);
   if (Number.isNaN(n) || n < 0) return undefined;
   return n;
-}
-
-// Write `value` into a player's predicted/actual array at `roundIndex`, growing
-// the array with holes if needed so earlier rounds stay intact.
-function setAt(
-  arr: (number | undefined)[],
-  roundIndex: number,
-  value: number | undefined,
-): (number | undefined)[] {
-  const next = [...arr];
-  while (next.length <= roundIndex) next.push(undefined);
-  next[roundIndex] = value;
-  return next;
 }
 
 export default function CorrectionPanel(props: {
@@ -46,47 +34,25 @@ export default function CorrectionPanel(props: {
   const roundIndex = editRound - 1;
 
   function setCurrentRound(round: number) {
-    const clamped = Math.min(Math.max(1, round), maxRounds);
-    updateGame({
-      ...game,
-      state: { ...game.state, currentRound: clamped },
-    });
+    updateGame(setRound(game, round));
   }
 
-  // Update one player's predicted/actual for the currently edited round. This is
-  // a silent correction: it never touches roundResultTrigger, so the display
-  // just re-renders the new totals without popping a badge.
+  // Update one player's predicted/actual for the currently edited round. These
+  // are silent corrections: the module never touches roundResultTrigger, so the
+  // display just re-renders the new totals without popping a badge.
   function setPlayerValue(
     playerName: string,
     field: "predicted" | "actual",
     value: number | undefined,
   ) {
-    updateGame({
-      ...game,
-      state: {
-        ...game.state,
-        playerStates: game.state.playerStates.map((ps) => {
-          if (ps.player.name !== playerName) return ps;
-          const nextArr = setAt(ps.points[field], roundIndex, value);
-          return {
-            ...ps,
-            points: {
-              ...ps.points,
-              [field]:
-                // `actual` is a dense number[]; fall back holes to 0 so its type
-                // stays consistent. `predicted` keeps holes as undefined.
-                field === "actual"
-                  ? nextArr.map((v) => v ?? 0)
-                  : nextArr,
-            },
-          };
-        }),
-      },
-    });
+    const next =
+      field === "predicted"
+        ? setPrediction(game, { playerName, value, round: editRound })
+        : setActual(game, { playerName, value, round: editRound });
+    updateGame(next);
   }
 
-  const playerTotal = (ps: PlayerState) =>
-    currentPoints(ps.points.predicted, ps.points.actual);
+  const playerTotal = (ps: PlayerState) => playerScore(ps);
 
   return (
     <div className="rounded-xl border border-neutral-800 bg-neutral-900/40">

@@ -3,6 +3,7 @@ import { useState } from "react";
 import PlayerListItem from "@/components/PlayerListItem/PlayerListItem";
 import NumberPad from "@/components/NumberPad/NumberPad";
 import { forbiddenLastPrediction } from "@/api/utils";
+import { predictionEntryOutcome, setPrediction } from "@/game/loop";
 
 export default function PredictedHitsView(props: {
   game: Game;
@@ -22,32 +23,12 @@ export default function PredictedHitsView(props: {
 
       // Save immediately
       const value = parseInt(newValue);
-      const updatedGame: Game = {
-        ...game,
-        state: {
-          ...game.state,
-          playerStates: game.state.playerStates.map((ps, index) => {
-            if (index === currentPlayerIndex) {
-              return {
-                ...ps,
-                points: {
-                  ...ps.points,
-                  predicted: [
-                    ...ps.points.predicted.slice(
-                      0,
-                      game.state.currentRound - 1,
-                    ),
-                    value,
-                    ...ps.points.predicted.slice(game.state.currentRound),
-                  ],
-                },
-              };
-            }
-            return ps;
-          }),
-        },
-      };
-      updateGame(updatedGame);
+      updateGame(
+        setPrediction(game, {
+          playerName: game.state.playerStates[currentPlayerIndex].player.name,
+          value,
+        }),
+      );
 
       // Advance immediately on a single digit. Most predictions are one digit;
       // for the rare two-digit value, tap the player to re-select and type the
@@ -58,17 +39,21 @@ export default function PredictedHitsView(props: {
 
   // Move to the next player, or finish the phase after the last one. `value` is
   // the prediction just entered by the current (last) player, used to honor the
-  // "Darf nicht aufgehen" block.
+  // "Darf nicht aufgehen" block. The decision itself lives in the game module.
   const advanceFrom = (value: number) => {
-    const blocked =
-      isLastPlayer && forbiddenValue !== null && value === forbiddenValue;
-    if (blocked) return;
-    if (currentPlayerIndex < totalPlayers - 1) {
-      setCurrentPlayerIndex((prev) => prev + 1);
-      setCurrentValue("");
-    } else {
+    const outcome = predictionEntryOutcome({
+      value,
+      playerIndex: currentPlayerIndex,
+      totalPlayers,
+      forbiddenValue,
+    });
+    if (outcome.kind === "blocked") return;
+    if (outcome.kind === "finish") {
       onComplete?.();
+      return;
     }
+    setCurrentPlayerIndex((prev) => prev + 1);
+    setCurrentValue("");
   };
 
   const handleBackspace = () => {
@@ -77,58 +62,24 @@ export default function PredictedHitsView(props: {
 
     // Save immediately (0 if empty)
     const value = newValue ? parseInt(newValue) : 0;
-    const updatedGame: Game = {
-      ...game,
-      state: {
-        ...game.state,
-        playerStates: game.state.playerStates.map((ps, index) => {
-          if (index === currentPlayerIndex) {
-            return {
-              ...ps,
-              points: {
-                ...ps.points,
-                predicted: [
-                  ...ps.points.predicted.slice(0, game.state.currentRound - 1),
-                  value,
-                  ...ps.points.predicted.slice(game.state.currentRound),
-                ],
-              },
-            };
-          }
-          return ps;
-        }),
-      },
-    };
-    updateGame(updatedGame);
+    updateGame(
+      setPrediction(game, {
+        playerName: game.state.playerStates[currentPlayerIndex].player.name,
+        value,
+      }),
+    );
   };
 
   const handleClear = () => {
     setCurrentValue("");
 
     // Remove the prediction entirely for this player/round instead of storing 0.
-    const updatedGame: Game = {
-      ...game,
-      state: {
-        ...game.state,
-        playerStates: game.state.playerStates.map((ps, index) => {
-          if (index === currentPlayerIndex) {
-            return {
-              ...ps,
-              points: {
-                ...ps.points,
-                predicted: [
-                  ...ps.points.predicted.slice(0, game.state.currentRound - 1),
-                  undefined,
-                  ...ps.points.predicted.slice(game.state.currentRound),
-                ],
-              },
-            };
-          }
-          return ps;
-        }),
-      },
-    };
-    updateGame(updatedGame);
+    updateGame(
+      setPrediction(game, {
+        playerName: game.state.playerStates[currentPlayerIndex].player.name,
+        value: undefined,
+      }),
+    );
   };
 
   const handleConfirm = () => {
