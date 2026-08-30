@@ -13,7 +13,7 @@ import {
   roundPoints,
   rankTrends,
 } from "@/api/utils";
-import RankTrend from "@/components/RankTrend/RankTrend";
+import RoundTrend from "@/components/RoundTrend/RoundTrend";
 import LeadTakeoverFx from "@/components/LeadTakeoverFx/LeadTakeoverFx";
 import SimpleLineChart from "@/components/SimpleLineChart/SimpleLineChart";
 import { useParams } from "react-router";
@@ -55,7 +55,10 @@ function StatsBlock(props: {
   // badge for that round.
   roundResultTrigger?: number;
   // How many rank places this player moved in the just-confirmed round (>0 up).
+  // Used to detect taking the lead for the celebration.
   rankDelta?: number;
+  // Points gained/lost in the last completed round; shown as the trend badge.
+  roundDelta?: number | null;
   // "Darf nicht aufgehen": value this (last-to-predict) player may not choose,
   // and whether they are being warned or have actually picked it (blocked).
   forbiddenValue?: number | null;
@@ -71,6 +74,7 @@ function StatsBlock(props: {
     chartHeight = 300,
     roundResultTrigger,
     rankDelta = 0,
+    roundDelta = null,
     forbiddenValue,
     forbiddenState,
   } = props;
@@ -191,7 +195,7 @@ function StatsBlock(props: {
           <span className="text-sm text-neutral-400 uppercase tracking-wider">
             pkt
           </span>
-          <RankTrend delta={rankDelta} />
+          <RoundTrend delta={roundDelta} />
         </div>
       ) : null}
       {/* "Darf nicht aufgehen": orange warns, red = value was picked. Replaces
@@ -760,6 +764,11 @@ export default function DisplayGamePage() {
               rank={ranks[idx]}
               roundResultTrigger={roundResultTrigger}
               rankDelta={trendByName.get(playerState.player.name) ?? 0}
+              roundDelta={
+                lastCompletedRound >= 1
+                  ? roundPoints(playerState, lastCompletedRound)
+                  : null
+              }
               chartHeight={boardChartHeight}
               forbiddenValue={
                 playerState.player.name === lastPredictor?.player.name
