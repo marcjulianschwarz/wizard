@@ -145,7 +145,7 @@ function StatsBlock(props: {
           <span className="text-sm text-neutral-400 uppercase tracking-wider">
             pkt
           </span>
-          <RankTrend delta={rankDelta} trigger={roundResultTrigger} />
+          <RankTrend delta={rankDelta} />
         </div>
       ) : null}
       {/* "Darf nicht aufgehen": orange warns, red = value was picked. Replaces
@@ -490,12 +490,13 @@ export default function DisplayGamePage() {
     ({ playerState }) => rankByName.get(playerState.player.name)!,
   );
 
-  // Rank movement across the just-confirmed round, so each card can show a
-  // subtle up/down trend arrow. Only meaningful once a round has been confirmed.
-  const trendByName =
-    game.state.roundResultTrigger !== undefined
-      ? rankTrends(game.state.playerStates, game.state.roundResultTrigger)
-      : undefined;
+  // Rank movement across the LAST COMPLETED round, so each card can always show
+  // a subtle up/down trend arrow reflecting the standings (not just for a
+  // moment after confirming). The current round is in progress, so the last
+  // completed one is currentRound - 1; from round 2 on there's a prior standing
+  // to compare against. rankTrends returns all-zeros before that.
+  const lastCompletedRound = game.state.currentRound - 1;
+  const trendByName = rankTrends(game.state.playerStates, lastCompletedRound);
 
   // playerStates is rotated once per round so index 0 is the round's starting
   // player. These stay fixed for the whole prediction phase and only change
@@ -712,7 +713,7 @@ export default function DisplayGamePage() {
               allNumbers={numbers[idx]}
               rank={ranks[idx]}
               roundResultTrigger={roundResultTrigger}
-              rankDelta={trendByName?.get(playerState.player.name) ?? 0}
+              rankDelta={trendByName.get(playerState.player.name) ?? 0}
               chartHeight={boardChartHeight}
               forbiddenValue={
                 playerState.player.name === lastPredictor?.player.name
