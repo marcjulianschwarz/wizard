@@ -47,8 +47,18 @@ export default function CorrectionPanel(props: {
   ) {
     const next =
       field === "predicted"
-        ? setPrediction(game, { playerName, value, round: editRound })
-        : setActual(game, { playerName, value, round: editRound });
+        ? setPrediction(game, {
+            playerName,
+            value,
+            round: editRound,
+            clampToRound: false,
+          })
+        : setActual(game, {
+            playerName,
+            value,
+            round: editRound,
+            clampToRound: false,
+          });
     updateGame(next);
   }
 

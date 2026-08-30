@@ -262,6 +262,35 @@ describe("value clamping on entry", () => {
     const g1 = setPrediction(g0, { playerName: "A", value: 99, round: 4 });
     expect(g1.state.playerStates[0].points.predicted[3]).toBe(4);
   });
+
+  it("clampToRound: false keeps a corrected value above the round number", () => {
+    const g0 = makeGame(["A", "B"]); // round 1
+    const pred = setPrediction(g0, {
+      playerName: "A",
+      value: 9,
+      round: 1,
+      clampToRound: false,
+    });
+    expect(pred.state.playerStates[0].points.predicted[0]).toBe(9);
+    const act = setActual(g0, {
+      playerName: "A",
+      value: 7,
+      round: 1,
+      clampToRound: false,
+    });
+    expect(act.state.playerStates[0].points.actual[0]).toBe(7);
+  });
+
+  it("clampToRound: false still clamps negatives up to 0", () => {
+    const g0 = makeGame(["A", "B"]);
+    const g1 = setActual(g0, {
+      playerName: "A",
+      value: -5,
+      round: 1,
+      clampToRound: false,
+    });
+    expect(g1.state.playerStates[0].points.actual[0]).toBe(0);
+  });
 });
 
 describe("validateRound", () => {

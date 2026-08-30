@@ -110,13 +110,21 @@ function clampRound(game: Game, round: number): number {
 // a round: 0..round. A player can neither take a negative number of tricks nor
 // more than the round number allows. Undefined (a clear) passes through so
 // predictions can still be reset to a hole.
+//
+// The upper bound (the round number) is the number of cards dealt during live
+// numpad entry. Corrections pass `clampUpper: false` to skip it: the correction
+// panel edits arbitrary past rounds where the "round number = cards" assumption
+// does not hold, and forcing every value down to the round number is exactly the
+// bug where round 1 collapsed every field to 1.
 function clampValue(
   value: number | undefined,
   round: number,
+  clampUpper: boolean = true,
 ): number | undefined {
   if (value === undefined) return undefined;
   if (!Number.isFinite(value)) return 0;
-  return Math.min(Math.max(0, Math.round(value)), round);
+  const nonNegative = Math.max(0, Math.round(value));
+  return clampUpper ? Math.min(nonNegative, round) : nonNegative;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,10 +135,15 @@ function clampValue(
 // undefined to clear it back to a hole (distinct from predicting 0).
 export function setPrediction(
   game: Game,
-  args: { playerName: string; value: number | undefined; round?: number },
+  args: {
+    playerName: string;
+    value: number | undefined;
+    round?: number;
+    clampToRound?: boolean;
+  },
 ): Game {
   const round = clampRound(game, args.round ?? game.state.currentRound);
-  const value = clampValue(args.value, round);
+  const value = clampValue(args.value, round, args.clampToRound ?? true);
   return mapPlayer(game, args.playerName, (ps) => ({
     ...ps,
     points: {
@@ -148,10 +161,15 @@ export function setPrediction(
 // dense number[] in the model, so a cleared value falls back to 0.
 export function setActual(
   game: Game,
-  args: { playerName: string; value: number | undefined; round?: number },
+  args: {
+    playerName: string;
+    value: number | undefined;
+    round?: number;
+    clampToRound?: boolean;
+  },
 ): Game {
   const round = clampRound(game, args.round ?? game.state.currentRound);
-  const value = clampValue(args.value, round);
+  const value = clampValue(args.value, round, args.clampToRound ?? true);
   return mapPlayer(game, args.playerName, (ps) => {
     const written = writeAt(ps.points.actual, idx(round), value);
     return {
