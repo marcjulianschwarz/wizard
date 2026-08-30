@@ -85,7 +85,7 @@ export default function FortuneWheelView({
   };
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex h-full flex-col items-center justify-center">
       <p className="mb-6 text-center text-sm text-neutral-400">
         Dreh das Rad auf dem Dashboard – wer beginnt zuerst?
       </p>

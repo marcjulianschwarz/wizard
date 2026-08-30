@@ -68,9 +68,9 @@ export default function PlayerOrderingView({
   );
 
   return (
-    <div>
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-white mb-2">
+    <div className="flex h-full flex-col">
+      <div className="mb-3 shrink-0 md:mb-6">
+        <h2 className="mb-1 text-lg font-semibold text-white md:mb-2 md:text-xl">
           Spielerreihenfolge
         </h2>
         <p className="text-sm text-neutral-400">
@@ -78,11 +78,11 @@ export default function PlayerOrderingView({
         </p>
       </div>
 
-      <div className="flex flex-col gap-3 mb-6">
+      <div className="mb-3 flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto md:mb-6 md:flex-none md:gap-3 md:overflow-visible">
         {orderedPlayers.map((playerState, index) => (
           <div
             key={`${playerState.player.name}-${index}`}
-            className="flex items-center gap-3 p-4 bg-neutral-900 border border-neutral-800 rounded-lg"
+            className="flex shrink-0 items-center gap-3 rounded-lg border border-neutral-800 bg-neutral-900 p-3 md:p-4"
           >
             <div className="flex items-center gap-3 flex-1">
               <span className="text-lg font-mono text-neutral-500 w-8">
@@ -120,7 +120,7 @@ export default function PlayerOrderingView({
 
       <button
         onClick={handleSave}
-        className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-medium py-4 px-6 rounded-xl transition-all duration-150 active:scale-95 text-lg"
+        className="w-full shrink-0 rounded-xl bg-blue-500 px-6 py-4 text-lg font-medium text-white transition-all duration-150 hover:bg-blue-600 active:scale-95 active:bg-blue-700"
       >
         Reihenfolge übernehmen →
       </button>

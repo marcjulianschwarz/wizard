@@ -91,56 +91,55 @@ export default function ActualHitsView(props: {
   const isLastPlayer = currentPlayerIndex === totalPlayers - 1;
 
   return (
-    <div className="w-full">
+    <div className="flex h-full w-full flex-col">
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-white">Gemachte Stiche</h2>
+      <h2 className="mb-3 shrink-0 text-lg font-semibold text-white md:mb-6 md:text-xl">
+        Gemachte Stiche
+      </h2>
+
+      {/* Progress overview — scrolls internally if it can't fit, so the numpad
+          and confirm button below always stay on screen. */}
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto md:flex-none md:overflow-visible">
+        {game.state.playerStates.map((playerState, index) => {
+          const displayValue =
+            index === currentPlayerIndex
+              ? currentValue || "—"
+              : (playerState.points.actual[
+                  game.state.currentRound - 1
+                ]?.toString() ?? "—");
+
+          const referenceValue =
+            playerState.points.predicted[game.state.currentRound - 1];
+
+          return (
+            <PlayerListItem
+              key={playerState.player.name}
+              playerState={playerState}
+              index={index}
+              currentPlayerIndex={currentPlayerIndex}
+              displayValue={displayValue}
+              referenceValue={referenceValue}
+              onClick={handlePlayerClick}
+            />
+          );
+        })}
       </div>
 
-      {/* Progress overview */}
-      <div className="mb-6">
-        <div className="space-y-2">
-          {game.state.playerStates.map((playerState, index) => {
-            const displayValue =
-              index === currentPlayerIndex
-                ? currentValue || "—"
-                : (playerState.points.actual[
-                    game.state.currentRound - 1
-                  ]?.toString() ?? "—");
-
-            const referenceValue =
-              playerState.points.predicted[game.state.currentRound - 1];
-
-            return (
-              <PlayerListItem
-                key={playerState.player.name}
-                playerState={playerState}
-                index={index}
-                currentPlayerIndex={currentPlayerIndex}
-                displayValue={displayValue}
-                referenceValue={referenceValue}
-                onClick={handlePlayerClick}
-              />
-            );
-          })}
-        </div>
+      <div className="mt-3 shrink-0 md:mt-6">
+        <NumberPad
+          onNumberClick={handleNumberClick}
+          onClear={handleClear}
+          onBackspace={handleBackspace}
+        />
       </div>
-
-      <NumberPad
-        onNumberClick={handleNumberClick}
-        onClear={handleClear}
-        onBackspace={handleBackspace}
-      />
 
       {/* Navigation */}
-      <div className="flex gap-3">
-        <button
-          onClick={handleConfirm}
-          className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 text-white font-medium py-4 px-6 rounded-xl transition-all duration-150 active:scale-98"
-        >
-          {isLastPlayer ? "Fertig ✓" : "Weiter →"}
-        </button>
-      </div>
+      <button
+        onClick={handleConfirm}
+        className="w-full shrink-0 rounded-xl bg-blue-500 px-6 py-4 font-medium text-white transition-all duration-150 hover:bg-blue-600 active:scale-98 active:bg-blue-700"
+      >
+        {isLastPlayer ? "Fertig ✓" : "Weiter →"}
+      </button>
     </div>
   );
 }

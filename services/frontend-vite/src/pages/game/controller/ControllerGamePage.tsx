@@ -1,6 +1,7 @@
 import { useSocket } from "@/api/hooks";
 import { useState } from "react";
 import ControllerRoundInfo from "@/components/RoundInfo/ControllerRoundInfo";
+import CompactControllerHeader from "@/components/RoundInfo/CompactControllerHeader";
 import { useParams } from "react-router";
 import PlayerOrderingView from "./views/PlayerOrderingView";
 import FortuneWheelView from "./views/FortuneWheelView";
@@ -8,6 +9,7 @@ import PredictedHitsView from "./views/PredictedHitsView";
 import ActualHitsView from "./views/ActualHitsView";
 import FinalView from "./views/FinalView";
 import CorrectionPanel from "./views/CorrectionPanel";
+import ControllerSheet from "./views/ControllerSheet";
 import { endGame, finishRound } from "@/game/loop";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
@@ -35,6 +37,8 @@ export default function ControllerGamePage() {
   const [currentPage, setCurrentPage] = useState(0);
   // Why the last "Fertig" was refused (incomplete/illegal round), or null.
   const [roundError, setRoundError] = useState<string | null>(null);
+  // Mobile-only: whether the secondary-controls bottom sheet is open.
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   function handleNextPage() {
     if (currentPage < pages.length - 1) {
@@ -160,77 +164,129 @@ export default function ControllerGamePage() {
   // players are predicting or playing out the round.
   const showTurnControls = currentKey === "pred" || currentKey === "made";
 
-  return (
-    <div className="mx-auto flex min-h-screen w-full max-w-md flex-col px-4 pb-8">
-      {/* Compact header: round info + join code / dashboard link. */}
-      <header className="py-3">
-        <ControllerRoundInfo game={game} />
-      </header>
-
-      {/* Slim step indicator. */}
-      <StepIndicator
-        activeKey={currentKey}
-        firstRound={game.state.currentRound === 1}
-      />
-
-      {/* Current step, in normal document flow so the page scrolls on mobile. */}
-      <main className="flex-1 pt-4">{pages[currentPage]}</main>
-
-      {/* Why the round could not be finished (missing values / forbidden pick). */}
-      {roundError && (
-        <div className="mt-4 whitespace-pre-line rounded-xl border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-400">
-          {roundError}
-        </div>
-      )}
-
-      {/* Dashboard controls + end game, flowing under the step (not fixed). */}
-      <div className="mt-8 flex flex-col gap-2 border-t border-neutral-800 pt-4">
-        {showTurnControls && (
-          <div className="grid grid-cols-2 gap-2">
-            <TurnToggle
-              active={game.state.turnOverlay?.kind === "predict"}
-              icon={<Megaphone size={16} />}
-              onClick={() => toggleTurnOverlay("predict")}
-            >
-              Stiche
-            </TurnToggle>
-            <TurnToggle
-              active={game.state.turnOverlay?.kind === "play"}
-              icon={<Play size={16} />}
-              onClick={() => toggleTurnOverlay("play")}
-            >
-              Am Zug
-            </TurnToggle>
-          </div>
-        )}
-
-        <div className="grid grid-cols-2 gap-2">
-          <TurnToggle
-            active={!!game.state.showWelcome}
-            icon={<Sparkles size={16} />}
-            onClick={toggleWelcome}
-          >
-            Willkommen
-          </TurnToggle>
-          <TurnToggle
-            active={!!game.state.setupBlackout}
-            icon={<MonitorOff size={16} />}
-            onClick={toggleBlackout}
-          >
-            Schwarz
-          </TurnToggle>
-        </div>
-
-        <CorrectionPanel game={game} updateGame={updateGame} />
-
-        <button
-          onClick={handleFinale}
-          className="mt-1 w-full rounded-xl border border-red-500/40 bg-red-500/10 px-6 py-3 text-sm font-medium text-red-400 transition-colors active:bg-red-500/20"
-        >
-          {isLastRound ? "Spiel beenden" : "Spiel vorzeitig beenden"}
-        </button>
-      </div>
+  // The turn-overlay toggles ("Stiche" / "Am Zug") stay on the main screen —
+  // they're used frequently mid-round — so they render inline on both layouts.
+  const turnToggles = showTurnControls && (
+    <div className="grid grid-cols-2 gap-2">
+      <TurnToggle
+        active={game.state.turnOverlay?.kind === "predict"}
+        icon={<Megaphone size={16} />}
+        onClick={() => toggleTurnOverlay("predict")}
+      >
+        Stiche
+      </TurnToggle>
+      <TurnToggle
+        active={game.state.turnOverlay?.kind === "play"}
+        icon={<Play size={16} />}
+        onClick={() => toggleTurnOverlay("play")}
+      >
+        Am Zug
+      </TurnToggle>
     </div>
+  );
+
+  // The secondary controls (display toggles, corrections, end game). Rendered
+  // inline in the desktop column and inside the bottom sheet on mobile.
+  const secondaryControls = (
+    <>
+      <div className="grid grid-cols-2 gap-2">
+        <TurnToggle
+          active={!!game.state.showWelcome}
+          icon={<Sparkles size={16} />}
+          onClick={toggleWelcome}
+        >
+          Willkommen
+        </TurnToggle>
+        <TurnToggle
+          active={!!game.state.setupBlackout}
+          icon={<MonitorOff size={16} />}
+          onClick={toggleBlackout}
+        >
+          Schwarz
+        </TurnToggle>
+      </div>
+
+      <CorrectionPanel game={game} updateGame={updateGame} />
+
+      <button
+        onClick={handleFinale}
+        className="mt-1 w-full rounded-xl border border-red-500/40 bg-red-500/10 px-6 py-3 text-sm font-medium text-red-400 transition-colors active:bg-red-500/20"
+      >
+        {isLastRound ? "Spiel beenden" : "Spiel vorzeitig beenden"}
+      </button>
+    </>
+  );
+
+  const roundErrorBlock = roundError && (
+    <div className="whitespace-pre-line rounded-xl border border-red-500/50 bg-red-500/10 p-3 text-sm text-red-400">
+      {roundError}
+    </div>
+  );
+
+  return (
+    <>
+      {/*
+        MOBILE: a fixed, full-screen, non-scrolling layout. The controller lives
+        on a phone, so the header is dense (round/time/code in one row), the
+        secondary controls hide behind a "More" sheet, and the active entry view
+        flexes to fill exactly the remaining height. `100dvh` + overflow-hidden
+        keeps it pinned with no page scroll. Hidden at `md` and up.
+      */}
+      <div className="flex h-[100dvh] flex-col overflow-hidden px-4 md:hidden">
+        <header className="shrink-0 py-2">
+          <CompactControllerHeader
+            game={game}
+            onOpenMore={() => setSheetOpen(true)}
+          />
+        </header>
+
+        <div className="shrink-0 pb-2">
+          <StepIndicator
+            activeKey={currentKey}
+            firstRound={game.state.currentRound === 1}
+          />
+        </div>
+
+        {/* The entry view owns the remaining space and sizes itself to fit. */}
+        <main className="min-h-0 flex-1 overflow-hidden pt-1">
+          {pages[currentPage]}
+        </main>
+
+        <div className="shrink-0 space-y-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2">
+          {roundErrorBlock}
+          {turnToggles}
+        </div>
+      </div>
+
+      {/*
+        DESKTOP: the original scrollable, centered column. Plenty of vertical
+        room, so the full round header and all controls flow inline.
+      */}
+      <div className="mx-auto hidden min-h-screen w-full max-w-md flex-col px-4 pb-8 md:flex">
+        <header className="py-3">
+          <ControllerRoundInfo game={game} />
+        </header>
+
+        <StepIndicator
+          activeKey={currentKey}
+          firstRound={game.state.currentRound === 1}
+        />
+
+        <main className="flex-1 pt-4">{pages[currentPage]}</main>
+
+        {roundError && <div className="mt-4">{roundErrorBlock}</div>}
+
+        <div className="mt-8 flex flex-col gap-2 border-t border-neutral-800 pt-4">
+          {turnToggles}
+          {secondaryControls}
+        </div>
+      </div>
+
+      {/* Mobile-only secondary-controls sheet, triggered from the header. */}
+      <ControllerSheet open={sheetOpen} onClose={() => setSheetOpen(false)}>
+        {secondaryControls}
+      </ControllerSheet>
+    </>
   );
 }
 

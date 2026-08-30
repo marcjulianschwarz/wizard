@@ -120,68 +120,65 @@ export default function PredictedHitsView(props: {
     currentValueNumber === forbiddenValue;
 
   return (
-    <div className="w-full">
+    <div className="flex h-full w-full flex-col">
       {/* Header */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold text-white">
-          Vorhergesagte Stiche
-        </h2>
-      </div>
+      <h2 className="mb-3 shrink-0 text-lg font-semibold text-white md:mb-6 md:text-xl">
+        Vorhergesagte Stiche
+      </h2>
 
-      {/* Progress overview */}
-      <div className="mb-6">
-        <div className="space-y-2">
-          {game.state.playerStates.map((playerState, index) => {
-            const displayValue =
-              index === currentPlayerIndex
-                ? currentValue || "—"
-                : (playerState.points.predicted[
-                    game.state.currentRound - 1
-                  ]?.toString() ?? "—");
+      {/* Progress overview — scrolls internally if it can't fit, so the numpad
+          and confirm button below always stay on screen. */}
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto md:flex-none md:overflow-visible">
+        {game.state.playerStates.map((playerState, index) => {
+          const displayValue =
+            index === currentPlayerIndex
+              ? currentValue || "—"
+              : (playerState.points.predicted[
+                  game.state.currentRound - 1
+                ]?.toString() ?? "—");
 
-            return (
-              <PlayerListItem
-                key={playerState.player.name}
-                playerState={playerState}
-                index={index}
-                currentPlayerIndex={currentPlayerIndex}
-                displayValue={displayValue}
-                onClick={handlePlayerClick}
-              />
-            );
-          })}
-        </div>
+          return (
+            <PlayerListItem
+              key={playerState.player.name}
+              playerState={playerState}
+              index={index}
+              currentPlayerIndex={currentPlayerIndex}
+              displayValue={displayValue}
+              onClick={handlePlayerClick}
+            />
+          );
+        })}
       </div>
 
       {/* "Darf nicht aufgehen" warning for the last player. */}
       {isLastPlayer && forbiddenValue !== null && (
-        <div className="mb-4 rounded-xl border border-orange-500/50 bg-orange-500/10 p-3 text-orange-400">
+        <div className="mt-3 shrink-0 rounded-xl border border-orange-500/50 bg-orange-500/10 p-2.5 text-orange-400">
           <p className="m-0 text-sm font-medium">
             Darf nicht {forbiddenValue} ansagen.
           </p>
         </div>
       )}
 
-      <NumberPad
-        onNumberClick={handleNumberClick}
-        onClear={handleClear}
-        onBackspace={handleBackspace}
-      />
+      <div className="mt-3 shrink-0 md:mt-6">
+        <NumberPad
+          onNumberClick={handleNumberClick}
+          onClear={handleClear}
+          onBackspace={handleBackspace}
+        />
+      </div>
 
       {/* Navigation */}
-      <div className="flex gap-3">
-        <button
-          onClick={handleConfirm}
-          disabled={isForbiddenPick}
-          className="w-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 disabled:bg-neutral-700 disabled:cursor-not-allowed text-white font-medium py-4 px-6 rounded-xl transition-all duration-150 active:scale-98"
-        >
-          {isForbiddenPick
-            ? `${forbiddenValue} nicht erlaubt`
-            : isLastPlayer
-              ? "Fertig ✓"
-              : "Weiter →"}
-        </button>
-      </div>
+      <button
+        onClick={handleConfirm}
+        disabled={isForbiddenPick}
+        className="w-full shrink-0 rounded-xl bg-blue-500 px-6 py-4 font-medium text-white transition-all duration-150 hover:bg-blue-600 active:scale-98 active:bg-blue-700 disabled:cursor-not-allowed disabled:bg-neutral-700"
+      >
+        {isForbiddenPick
+          ? `${forbiddenValue} nicht erlaubt`
+          : isLastPlayer
+            ? "Fertig ✓"
+            : "Weiter →"}
+      </button>
     </div>
   );
 }

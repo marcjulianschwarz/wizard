@@ -10,12 +10,12 @@ export default function NumberPad({
   onBackspace,
 }: NumberPadProps) {
   return (
-    <div className="grid grid-cols-3 gap-3 mb-6">
+    <div className="mb-3 grid grid-cols-3 gap-2 md:mb-6 md:gap-3">
       {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
         <button
           key={num}
           onClick={() => onNumberClick(num.toString())}
-          className="h-16 bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-white text-xl font-medium rounded-xl border border-neutral-700 transition-all duration-150 active:scale-95"
+          className="h-12 rounded-xl border border-neutral-700 bg-neutral-800 text-xl font-medium text-white transition-all duration-150 hover:bg-neutral-700 active:scale-95 active:bg-neutral-600 sm:h-14 md:h-16"
         >
           {num}
         </button>
@@ -24,7 +24,7 @@ export default function NumberPad({
       {/* Bottom row */}
       <button
         onClick={onClear}
-        className="h-16 bg-neutral-800 hover:bg-red-900/30 active:bg-red-900/50 text-red-500 font-medium rounded-xl border border-neutral-700 transition-all duration-150 active:scale-95"
+        className="h-12 rounded-xl border border-neutral-700 bg-neutral-800 font-medium text-red-500 transition-all duration-150 hover:bg-red-900/30 active:scale-95 active:bg-red-900/50 sm:h-14 md:h-16"
       >
         <svg
           className="w-5 h-5 mx-auto"
@@ -43,14 +43,14 @@ export default function NumberPad({
 
       <button
         onClick={() => onNumberClick("0")}
-        className="h-16 bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 text-white text-xl font-medium rounded-xl border border-neutral-700 transition-all duration-150 active:scale-95"
+        className="h-12 rounded-xl border border-neutral-700 bg-neutral-800 text-xl font-medium text-white transition-all duration-150 hover:bg-neutral-700 active:scale-95 active:bg-neutral-600 sm:h-14 md:h-16"
       >
         0
       </button>
 
       <button
         onClick={onBackspace}
-        className="h-16 bg-neutral-800 hover:bg-amber-900/30 active:bg-amber-900/50 text-amber-500 font-medium rounded-xl border border-neutral-700 transition-all duration-150 active:scale-95"
+        className="h-12 rounded-xl border border-neutral-700 bg-neutral-800 font-medium text-amber-500 transition-all duration-150 hover:bg-amber-900/30 active:scale-95 active:bg-amber-900/50 sm:h-14 md:h-16"
       >
         <svg
           className="w-5 h-5 mx-auto"
