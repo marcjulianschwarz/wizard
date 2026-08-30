@@ -7,9 +7,10 @@ interface RoundTrendProps {
   delta: number | null;
 }
 
-// A small pill next to a player's score showing how many POINTS they gained or
-// lost in the last round: green "▲ 40" up, red "▼ 30" down. Always reflects the
-// last completed round; cross-fades when the value changes.
+// A quiet inline hint of how many POINTS a player gained or lost last round: a
+// thin caret + number in a muted green/red, sitting unobtrusively next to the
+// "PKT" label — no pill, no bold. Always reflects the last completed round and
+// cross-fades when it changes.
 export default function RoundTrend({ delta }: RoundTrendProps) {
   const show = delta !== null && delta !== 0;
   const gained = (delta ?? 0) > 0;
@@ -20,18 +21,16 @@ export default function RoundTrend({ delta }: RoundTrendProps) {
       {show && (
         <motion.span
           key={delta}
-          className={`ml-1.5 inline-flex -translate-y-0.5 items-center gap-0.5 self-center rounded-full px-2 py-1 text-sm font-bold leading-none tabular-nums ${
-            gained
-              ? "bg-green-500/15 text-green-400"
-              : "bg-red-500/15 text-red-400"
+          className={`ml-1 inline-flex items-center gap-px text-xs font-medium leading-none tabular-nums ${
+            gained ? "text-green-500/60" : "text-red-500/60"
           }`}
-          initial={{ opacity: 0, y: gained ? 6 : -6, scale: 0.8 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.8 }}
-          transition={{ type: "spring", stiffness: 400, damping: 26 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
           aria-label={`${amount} Punkte ${gained ? "gewonnen" : "verloren"}`}
         >
-          {gained ? <ArrowUp size={13} /> : <ArrowDown size={13} />}
+          {gained ? <ArrowUp size={11} strokeWidth={2.5} /> : <ArrowDown size={11} strokeWidth={2.5} />}
           {amount}
         </motion.span>
       )}
