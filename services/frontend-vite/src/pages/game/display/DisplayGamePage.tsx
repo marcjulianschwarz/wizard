@@ -5,6 +5,7 @@ import TurnOverlay from "@/components/TurnOverlay/TurnOverlay";
 import FortuneWheel from "@/components/FortuneWheel/FortuneWheel";
 import WizardWelcome from "@/components/WizardWelcome/WizardWelcome";
 import RoundPointsBadge from "@/components/RoundPointsBadge/RoundPointsBadge";
+import AnimatedScore from "@/components/AnimatedScore/AnimatedScore";
 import {
   currentPoints,
   lineChartPointsValues,
@@ -119,9 +120,15 @@ function StatsBlock(props: {
       </div>
       {points !== null && points !== undefined ? (
         <div className="relative z-10 mb-2 flex items-baseline gap-1">
-          <span className="text-4xl md:text-5xl font-black text-white tabular-nums tracking-tight">
-            {points}
-          </span>
+          <AnimatedScore
+            points={points}
+            roundDelta={
+              roundResultTrigger !== undefined
+                ? roundPoints(playerState, roundResultTrigger)
+                : null
+            }
+            trigger={roundResultTrigger}
+          />
           <span className="text-sm text-neutral-400 uppercase tracking-wider">
             pkt
           </span>
