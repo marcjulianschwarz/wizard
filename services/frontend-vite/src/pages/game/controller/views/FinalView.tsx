@@ -5,6 +5,7 @@ import type { Game } from "@/api/entities";
 import { currentPoints } from "@/api/utils";
 import Button from "@/components/Button/Button";
 import FinalExport from "./FinalExport";
+import CorrectionPanel from "./CorrectionPanel";
 
 export default function FinalView(props: {
   game: Game;
@@ -98,6 +99,8 @@ export default function FinalView(props: {
           </Link>
         )}
       </div>
+
+      <CorrectionPanel game={game} updateGame={updateGame} />
 
       {/* Off-screen 16:9 canvas used purely as the screenshot source. Shifted
           out of view (not hidden) so recharts can measure and render. */}

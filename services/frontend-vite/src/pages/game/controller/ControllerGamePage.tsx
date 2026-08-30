@@ -7,6 +7,7 @@ import FortuneWheelView from "./views/FortuneWheelView";
 import PredictedHitsView from "./views/PredictedHitsView";
 import ActualHitsView from "./views/ActualHitsView";
 import FinalView from "./views/FinalView";
+import CorrectionPanel from "./views/CorrectionPanel";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
   ListOrdered,
@@ -225,6 +226,8 @@ export default function ControllerGamePage() {
             Schwarz
           </TurnToggle>
         </div>
+
+        <CorrectionPanel game={game} updateGame={updateGame} />
 
         <button
           onClick={handleFinale}
