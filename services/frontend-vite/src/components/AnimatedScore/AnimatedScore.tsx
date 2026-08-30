@@ -28,6 +28,12 @@ export default function AnimatedScore({
   // Latest total, read inside the delayed timer without re-running the effect.
   const latestPoints = useRef(points);
   latestPoints.current = points;
+  // True from the moment a trigger arrives until its count-up finishes. While
+  // set, the `points` effect must NOT snap to the new total: the confirming
+  // broadcast bumps `points` and `trigger` together, so without this guard the
+  // points effect would race ahead during the 1400ms badge delay (velocity is
+  // still 0 then) and jump straight to the final value — no visible count-up.
+  const pending = useRef(false);
 
   useEffect(() => {
     const unsubscribe = motionValue.on("change", (v) =>
@@ -44,6 +50,7 @@ export default function AnimatedScore({
 
     const target = latestPoints.current;
     const start = target - roundDelta;
+    pending.current = true;
     motionValue.set(start);
     setDisplay(start);
 
@@ -51,16 +58,24 @@ export default function AnimatedScore({
       animate(motionValue, latestPoints.current, {
         duration: 1,
         ease: "easeOut",
+        onComplete: () => {
+          pending.current = false;
+        },
       });
     }, 1400);
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      pending.current = false;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trigger]);
 
   // Any other change to the total (not driven by a trigger animation) is
-  // reflected immediately.
+  // reflected immediately — but never while a triggered count-up is pending,
+  // which owns the display until it lands.
   useEffect(() => {
+    if (pending.current) return;
     if (motionValue.getVelocity() === 0) {
       motionValue.set(points);
       setDisplay(points);
