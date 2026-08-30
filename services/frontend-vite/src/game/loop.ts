@@ -197,6 +197,35 @@ export function reorderPlayers(game: Game, order: number[]): Game {
 }
 
 // ---------------------------------------------------------------------------
+// Player identity (name / icon)
+// ---------------------------------------------------------------------------
+
+// Update one player's display name and/or icon (color), matched by their
+// CURRENT position. Matching by index (not name) keeps a rename safe even if it
+// would momentarily collide with another player's name. Points travel with the
+// PlayerState, so a rename never loses score. Silent — no roundResultTrigger.
+export function setPlayerIdentity(
+  game: Game,
+  args: { playerIndex: number; name?: string; color?: string },
+): Game {
+  const { playerIndex, name, color } = args;
+  return withState(game, {
+    playerStates: game.state.playerStates.map((ps, i) => {
+      if (i !== playerIndex) return ps;
+      const nextName = name !== undefined ? name.trim() || ps.player.name : ps.player.name;
+      return {
+        ...ps,
+        player: {
+          ...ps.player,
+          name: nextName,
+          color: color ?? ps.player.color,
+        },
+      };
+    }),
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Round advancement
 // ---------------------------------------------------------------------------
 

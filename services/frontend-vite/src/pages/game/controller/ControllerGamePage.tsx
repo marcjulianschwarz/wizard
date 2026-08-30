@@ -9,6 +9,7 @@ import PredictedHitsView from "./views/PredictedHitsView";
 import ActualHitsView from "./views/ActualHitsView";
 import FinalView from "./views/FinalView";
 import CorrectionPanel from "./views/CorrectionPanel";
+import PlayerEditPanel from "./views/PlayerEditPanel";
 import ControllerSheet from "./views/ControllerSheet";
 import { endGame, finishRound } from "@/game/loop";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -217,6 +218,8 @@ export default function ControllerGamePage() {
       </div>
 
       <CorrectionPanel game={game} updateGame={updateGame} />
+
+      <PlayerEditPanel game={game} updateGame={updateGame} />
 
       <button
         onClick={handleFinale}

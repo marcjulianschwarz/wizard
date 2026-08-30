@@ -11,6 +11,7 @@ import {
   reorderPlayers,
   setActual,
   setCurrentRound,
+  setPlayerIdentity,
   setPrediction,
   tricksEntryOutcome,
   validateRound,
@@ -346,6 +347,32 @@ describe("reorderPlayers", () => {
     g = reorderPlayers(g, [2, 1, 0]); // A, C, B
     const a = g.state.playerStates.find((p) => p.player.name === "A")!;
     expect(playerScore(a)).toBe(40);
+  });
+});
+
+describe("setPlayerIdentity", () => {
+  it("renames a player without touching their points", () => {
+    let g = setCurrentRound(makeGame(["A", "B"]), 3);
+    g = playRound(g, { A: [2, 2], B: [0, 0] }); // A scores 40
+    const aIndex = g.state.playerStates.findIndex((p) => p.player.name === "A");
+    g = setPlayerIdentity(g, { playerIndex: aIndex, name: "Alice" });
+    const renamed = g.state.playerStates[aIndex];
+    expect(renamed.player.name).toBe("Alice");
+    expect(playerScore(renamed)).toBe(40);
+  });
+
+  it("changes only the icon when no name is given", () => {
+    const g0 = makeGame(["A", "B"]);
+    const g1 = setPlayerIdentity(g0, { playerIndex: 1, color: "🦄" });
+    expect(g1.state.playerStates[1].player.color).toBe("🦄");
+    expect(g1.state.playerStates[1].player.name).toBe("B");
+    expect(g1.state.playerStates[0].player.color).toBe("🎩");
+  });
+
+  it("ignores a blank rename, keeping the old name", () => {
+    const g0 = makeGame(["A", "B"]);
+    const g1 = setPlayerIdentity(g0, { playerIndex: 0, name: "   " });
+    expect(g1.state.playerStates[0].player.name).toBe("A");
   });
 });
 
