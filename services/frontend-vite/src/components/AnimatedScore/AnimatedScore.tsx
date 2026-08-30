@@ -54,6 +54,9 @@ export default function AnimatedScore({
     motionValue.set(start);
     setDisplay(start);
 
+    // Start the count-up only as the badge begins to fade (it holds until
+    // ~2100ms), so the sequence reads as two distinct beats: the "+30" pops and
+    // holds, THEN the total visibly climbs — rather than both moving at once.
     const timer = setTimeout(() => {
       animate(motionValue, latestPoints.current, {
         duration: 1,
@@ -62,7 +65,7 @@ export default function AnimatedScore({
           pending.current = false;
         },
       });
-    }, 1400);
+    }, 2100);
 
     return () => {
       clearTimeout(timer);
