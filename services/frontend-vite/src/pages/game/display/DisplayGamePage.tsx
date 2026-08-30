@@ -78,9 +78,17 @@ function StatsBlock(props: {
   const predicted = playerState.points.predicted[currentRound - 1];
   const actual = playerState.points.actual[currentRound - 1];
 
+  // The controller writes each player's actual count to game state live while
+  // typing on the numpad, so `currentPoints` over the full arrays would jump
+  // the moment a digit is entered. Hold the displayed total at the previous
+  // round's value until the controller confirms this round (roundResultTrigger
+  // catches up to currentRound), so AnimatedScore can count up only then.
+  const roundConfirmed =
+    roundResultTrigger !== undefined && roundResultTrigger >= currentRound;
+  const scoredUpTo = roundConfirmed ? currentRound : currentRound - 1;
   const points = currentPoints(
-    playerState.points.predicted,
-    playerState.points.actual,
+    playerState.points.predicted.slice(0, scoredUpTo),
+    playerState.points.actual.slice(0, scoredUpTo),
   );
 
   return (
