@@ -1,5 +1,5 @@
 import { useSocket } from "@/api/hooks";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import ControllerRoundInfo from "@/components/RoundInfo/ControllerRoundInfo";
 import CompactControllerHeader from "@/components/RoundInfo/CompactControllerHeader";
 import { useParams } from "react-router";
@@ -39,6 +39,16 @@ export default function ControllerGamePage() {
   const [roundError, setRoundError] = useState<string | null>(null);
   // Mobile-only: whether the secondary-controls bottom sheet is open.
   const [sheetOpen, setSheetOpen] = useState(false);
+
+  // On first load (e.g. a page reload mid-game) resume at the right phase rather
+  // than the round-1 setup: the player-ordering and fortune-wheel steps only run
+  // before round 1, so from round 2 on jump straight to the prediction step.
+  const didInitPage = useRef(false);
+  useEffect(() => {
+    if (didInitPage.current || !game) return;
+    didInitPage.current = true;
+    if (game.state.currentRound > 1) setCurrentPage(2);
+  }, [game]);
 
   function handleNextPage() {
     if (currentPage < pages.length - 1) {
@@ -232,15 +242,15 @@ export default function ControllerGamePage() {
         flexes to fill exactly the remaining height. `100dvh` + overflow-hidden
         keeps it pinned with no page scroll. Hidden at `md` and up.
       */}
-      <div className="flex h-[100dvh] flex-col overflow-hidden px-4 md:hidden">
-        <header className="shrink-0 py-2">
+      <div className="flex h-[100dvh] flex-col overflow-hidden px-4 pt-[env(safe-area-inset-top)] md:hidden">
+        <header className="shrink-0 pb-3 pt-3">
           <CompactControllerHeader
             game={game}
             onOpenMore={() => setSheetOpen(true)}
           />
         </header>
 
-        <div className="shrink-0 pb-2">
+        <div className="shrink-0 pb-3">
           <StepIndicator
             activeKey={currentKey}
             firstRound={game.state.currentRound === 1}
@@ -248,11 +258,11 @@ export default function ControllerGamePage() {
         </div>
 
         {/* The entry view owns the remaining space and sizes itself to fit. */}
-        <main className="min-h-0 flex-1 overflow-hidden pt-1">
+        <main className="min-h-0 flex-1 overflow-hidden">
           {pages[currentPage]}
         </main>
 
-        <div className="shrink-0 space-y-2 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2">
+        <div className="shrink-0 space-y-2 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3">
           {roundErrorBlock}
           {turnToggles}
         </div>

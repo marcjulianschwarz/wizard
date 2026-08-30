@@ -125,8 +125,9 @@ export default function PredictedHitsView(props: {
 
   return (
     <div className="flex h-full w-full flex-col">
-      {/* Header */}
-      <h2 className="mb-3 shrink-0 text-lg font-semibold text-white md:mb-6 md:text-xl">
+      {/* Header — hidden on mobile, where the step indicator already names the
+          phase and vertical space is tight. */}
+      <h2 className="mb-3 hidden shrink-0 text-lg font-semibold text-white md:block md:mb-6 md:text-xl">
         Vorhergesagte Stiche
       </h2>
 

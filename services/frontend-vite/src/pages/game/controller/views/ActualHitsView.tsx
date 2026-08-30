@@ -40,9 +40,11 @@ export default function ActualHitsView(props: {
         digitsEntered: newValue.length,
         playerIndex: currentPlayerIndex,
         totalPlayers,
-        // Tricks aren't capped by the round number here, so a two-digit count is
-        // always reachable — 60 cards is the only real ceiling.
-        maxTricks: 60,
+        // This only decides whether to WAIT for a possible second digit — it is
+        // not a value cap (the stored value is unclamped above). Keep it at the
+        // round number so ordinary single-digit counts auto-advance; a genuinely
+        // two-digit count is entered by re-selecting the player and appending.
+        maxTricks: game.state.currentRound,
       });
       if (outcome.kind === "advance") {
         advanceFromCurrent();
@@ -99,8 +101,9 @@ export default function ActualHitsView(props: {
 
   return (
     <div className="flex h-full w-full flex-col">
-      {/* Header */}
-      <h2 className="mb-3 shrink-0 text-lg font-semibold text-white md:mb-6 md:text-xl">
+      {/* Header — hidden on mobile, where the step indicator already names the
+          phase and vertical space is tight. */}
+      <h2 className="mb-3 hidden shrink-0 text-lg font-semibold text-white md:block md:mb-6 md:text-xl">
         Gemachte Stiche
       </h2>
 
