@@ -14,6 +14,7 @@ import {
   rankTrends,
 } from "@/api/utils";
 import RankTrend from "@/components/RankTrend/RankTrend";
+import LeadTakeoverFx from "@/components/LeadTakeoverFx/LeadTakeoverFx";
 import SimpleLineChart from "@/components/SimpleLineChart/SimpleLineChart";
 import { useParams } from "react-router";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -96,8 +97,27 @@ function StatsBlock(props: {
     playerState.points.actual.slice(0, scoredUpTo),
   );
 
+  // Did this player just climb into first place this round? (was lower, now #1)
+  // Drives the "new leader" celebration. rankDelta > 0 = climbed.
+  const tookLead = rank === 1 && rankDelta > 0;
+
+  // Fire the in-place celebration once per confirmed round (not on every socket
+  // re-render): a state flag set on a new trigger and cleared when it ends.
+  const [celebrate, setCelebrate] = useState(false);
+  const celebratedTrigger = useRef(roundResultTrigger);
+  useEffect(() => {
+    if (roundResultTrigger === undefined) return;
+    if (roundResultTrigger === celebratedTrigger.current) return;
+    celebratedTrigger.current = roundResultTrigger;
+    if (!tookLead) return;
+    setCelebrate(true);
+    const timer = setTimeout(() => setCelebrate(false), 1200);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roundResultTrigger]);
+
   return (
-    <div
+    <motion.div
       className={`relative h-full min-h-0 overflow-hidden p-4 border-2 rounded-xl ${
         showForbidden
           ? isBlocked
@@ -105,6 +125,20 @@ function StatsBlock(props: {
             : "border-orange-500 shadow-[0_0_40px_-6px_rgba(249,115,22,0.6)]"
           : style.card
       }`}
+      // Celebrate a fresh #1 in place: a gold glow pulse + a little bounce.
+      animate={
+        celebrate
+          ? {
+              scale: [1, 1.035, 1],
+              boxShadow: [
+                "0 0 40px -3px rgba(234,179,8,0.55)",
+                "0 0 70px 4px rgba(234,179,8,0.95)",
+                "0 0 40px -3px rgba(234,179,8,0.55)",
+              ],
+            }
+          : {}
+      }
+      transition={{ duration: 1.1, ease: "easeOut" }}
     >
       {/* Floating "+50 / -20" that pops when this player's round score lands. */}
       <RoundPointsBadge
@@ -116,11 +150,23 @@ function StatsBlock(props: {
         trigger={roundResultTrigger}
       />
 
-      {/* Oversized rank number watermark */}
+      {/* Crown sparkle that flies in when this card takes over first place. */}
+      <LeadTakeoverFx active={celebrate} />
+
+      {/* Oversized rank number watermark — pops/flips when the rank changes. */}
       {rank ? (
-        <span className="pointer-events-none select-none absolute top-2 right-4 text-7xl font-black text-white/5 leading-none">
-          {rank}
-        </span>
+        <AnimatePresence mode="wait">
+          <motion.span
+            key={rank}
+            className="pointer-events-none select-none absolute top-2 right-4 text-7xl font-black text-white/5 leading-none"
+            initial={{ opacity: 0, scale: 0.5, rotateX: -80 }}
+            animate={{ opacity: 1, scale: 1, rotateX: 0 }}
+            exit={{ opacity: 0, scale: 0.5, rotateX: 80 }}
+            transition={{ type: "spring", stiffness: 400, damping: 24 }}
+          >
+            {rank}
+          </motion.span>
+        </AnimatePresence>
       ) : null}
 
       <div className="relative z-10 flex items-center gap-3 mb-3">
@@ -205,7 +251,7 @@ function StatsBlock(props: {
           height={chartHeight}
         />
       )}
-    </div>
+    </motion.div>
   );
 }
 
