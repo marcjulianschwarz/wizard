@@ -27,6 +27,9 @@ export default function PredictedHitsView(props: {
         setPrediction(game, {
           playerName: game.state.playerStates[currentPlayerIndex].player.name,
           value,
+          // Predictions aren't capped by the round number in this variant, so
+          // don't clamp — matches the live tricks entry and correction panel.
+          clampToRound: false,
         }),
       );
 
@@ -66,6 +69,7 @@ export default function PredictedHitsView(props: {
       setPrediction(game, {
         playerName: game.state.playerStates[currentPlayerIndex].player.name,
         value,
+        clampToRound: false,
       }),
     );
   };

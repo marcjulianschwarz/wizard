@@ -106,20 +106,20 @@ function clampRound(game: Game, round: number): number {
   return Math.min(Math.max(1, Math.round(round)), max);
 }
 
-// Clamp a predicted/actual value into the only range that can ever be valid for
-// a round: 0..round. A player can neither take a negative number of tricks nor
-// more than the round number allows. Undefined (a clear) passes through so
+// Clamp a predicted/actual value to a non-negative integer. A player can never
+// take a negative number of tricks. Undefined (a clear) passes through so
 // predictions can still be reset to a hole.
 //
-// The upper bound (the round number) is the number of cards dealt during live
-// numpad entry. Corrections pass `clampUpper: false` to skip it: the correction
-// panel edits arbitrary past rounds where the "round number = cards" assumption
-// does not hold, and forcing every value down to the round number is exactly the
-// bug where round 1 collapsed every field to 1.
+// There is NO fixed upper bound in this variant: the round number is not the
+// number of cards dealt (the game plays a fixed 60/players rounds), so a player
+// can make more tricks than the round number. Callers may opt INTO an upper
+// clamp at the round number with `clampUpper: true`, but this is off by default
+// — forcing values down to the round number was the bug where round 1 collapsed
+// every field to 1 and round 2 stored a typed 3 as 2.
 function clampValue(
   value: number | undefined,
   round: number,
-  clampUpper: boolean = true,
+  clampUpper: boolean = false,
 ): number | undefined {
   if (value === undefined) return undefined;
   if (!Number.isFinite(value)) return 0;
@@ -143,7 +143,7 @@ export function setPrediction(
   },
 ): Game {
   const round = clampRound(game, args.round ?? game.state.currentRound);
-  const value = clampValue(args.value, round, args.clampToRound ?? true);
+  const value = clampValue(args.value, round, args.clampToRound ?? false);
   return mapPlayer(game, args.playerName, (ps) => ({
     ...ps,
     points: {
@@ -169,7 +169,7 @@ export function setActual(
   },
 ): Game {
   const round = clampRound(game, args.round ?? game.state.currentRound);
-  const value = clampValue(args.value, round, args.clampToRound ?? true);
+  const value = clampValue(args.value, round, args.clampToRound ?? false);
   return mapPlayer(game, args.playerName, (ps) => {
     const written = writeAt(ps.points.actual, idx(round), value);
     return {

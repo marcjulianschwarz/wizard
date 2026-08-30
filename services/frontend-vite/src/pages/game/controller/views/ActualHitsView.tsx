@@ -25,6 +25,10 @@ export default function ActualHitsView(props: {
         setActual(game, {
           playerName: game.state.playerStates[currentPlayerIndex].player.name,
           value,
+          // Tricks are not capped by the round number in this variant (the round
+          // number is not the cards dealt), so don't clamp — otherwise typing 3
+          // in round 2 silently stored 2 while the numpad still showed 3.
+          clampToRound: false,
         }),
       );
 
@@ -36,7 +40,9 @@ export default function ActualHitsView(props: {
         digitsEntered: newValue.length,
         playerIndex: currentPlayerIndex,
         totalPlayers,
-        maxTricks: game.state.currentRound,
+        // Tricks aren't capped by the round number here, so a two-digit count is
+        // always reachable — 60 cards is the only real ceiling.
+        maxTricks: 60,
       });
       if (outcome.kind === "advance") {
         advanceFromCurrent();
@@ -63,6 +69,7 @@ export default function ActualHitsView(props: {
         setActual(game, {
           playerName: game.state.playerStates[currentPlayerIndex].player.name,
           value,
+          clampToRound: false,
         }),
       );
     }
