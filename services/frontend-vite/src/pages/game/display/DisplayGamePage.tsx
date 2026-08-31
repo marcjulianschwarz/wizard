@@ -359,6 +359,9 @@ function FinalPage(props: { game: Game }) {
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const winnersRef = useRef<HTMLDivElement>(null);
   const showCharts = game.state.showCharts ?? false;
+  // Reuse the same board flip toggle ("Statistiken" on the controller) to flip
+  // the final charts around to their stats side.
+  const showStats = game.state.showStats ?? false;
 
   useConfetti(winnersRef);
 
@@ -489,18 +492,26 @@ function FinalPage(props: { game: Game }) {
         {showCharts ? (
           <div className="grid gap-4 w-full max-w-4xl p-4 grid-cols-1 sm:grid-cols-2">
             {ranked.map(({ ps }, idx) => (
-              <StatsBlock
+              // The card uses a FlipCard whose faces are absolutely positioned,
+              // so the cell needs an explicit height or the card collapses to
+              // zero and nothing renders. Reserve the chart plus its chrome.
+              <div
                 key={ps.player.name}
-                playerState={ps}
-                // Past the last round so no per-round number shows — the card
-                // renders the points progression chart instead.
-                currentRound={game.state.currentRound + 1}
-                globalMin={chartMin}
-                globalMax={chartMax}
-                allNumbers={lineChartPointsValues(ps, game.state.currentRound)}
-                rank={rankForIndex(idx)}
-                chartHeight={finalChartHeight}
-              />
+                style={{ height: finalChartHeight + CARD_CHROME }}
+              >
+                <StatsBlock
+                  playerState={ps}
+                  // Past the last round so no per-round number shows — the card
+                  // renders the points progression chart instead.
+                  currentRound={game.state.currentRound + 1}
+                  globalMin={chartMin}
+                  globalMax={chartMax}
+                  allNumbers={lineChartPointsValues(ps, game.state.currentRound)}
+                  rank={rankForIndex(idx)}
+                  chartHeight={finalChartHeight}
+                  showStats={showStats}
+                />
+              </div>
             ))}
           </div>
         ) : (
