@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Game, Player } from "@/api/entities";
+import type { EntryOutcome } from "./loop";
 import {
   createGame,
   endGame,
@@ -7,6 +8,7 @@ import {
   maxRounds,
   playerScore,
   predictionEntryOutcome,
+  predictionOverlayTransition,
   ranking,
   reorderPlayers,
   setActual,
@@ -478,6 +480,100 @@ describe("tricksEntryOutcome", () => {
     expect(
       tricksEntryOutcome({ playerIndex: 2, totalPlayers: 3 }),
     ).toEqual({ kind: "wait" });
+  });
+});
+
+describe("predictionOverlayTransition", () => {
+  // These rules drive an auto-toggle of the dashboard overlay. A regression here
+  // once wiped saved predictions (a stale follow-up write), so pin every case.
+  const advance: EntryOutcome = { kind: "advance" };
+  const finish: EntryOutcome = { kind: "finish" };
+  const blocked: EntryOutcome = { kind: "blocked" };
+
+  it("hides the Stiche overlay on the first player's first digit", () => {
+    expect(
+      predictionOverlayTransition({
+        current: { kind: "predict" },
+        outcome: advance,
+        playerIndex: 0,
+        isFirstDigit: true,
+      }),
+    ).toBeUndefined();
+  });
+
+  it("does not touch the overlay on the first player's second digit", () => {
+    expect(
+      predictionOverlayTransition({
+        current: { kind: "predict" },
+        outcome: advance,
+        playerIndex: 0,
+        isFirstDigit: false,
+      }),
+    ).toEqual({ kind: "predict" });
+  });
+
+  it("does not touch the overlay for a middle player", () => {
+    expect(
+      predictionOverlayTransition({
+        current: undefined,
+        outcome: advance,
+        playerIndex: 1,
+        isFirstDigit: true,
+      }),
+    ).toBeUndefined();
+  });
+
+  it("shows the Am Zug overlay when the last prediction finishes the phase", () => {
+    expect(
+      predictionOverlayTransition({
+        current: undefined,
+        outcome: finish,
+        playerIndex: 2,
+        isFirstDigit: true,
+      }),
+    ).toEqual({ kind: "play" });
+  });
+
+  it("leaves the overlay untouched when an entry is blocked", () => {
+    expect(
+      predictionOverlayTransition({
+        current: { kind: "predict" },
+        outcome: blocked,
+        playerIndex: 2,
+        isFirstDigit: true,
+      }),
+    ).toEqual({ kind: "predict" });
+  });
+
+  // The bug this guards against: entering the LAST prediction must both save the
+  // value AND flip the overlay in a single write. Simulate the view's real flow
+  // — save the prediction, then fold the overlay transition onto that same game
+  // — and assert the prediction is still there.
+  it("keeps the last prediction saved while switching to the Am Zug overlay", () => {
+    const g = makeGame(["A", "B", "C"]);
+    const lastIndex = 2;
+    const saved = setPrediction(g, {
+      playerName: g.state.playerStates[lastIndex].player.name,
+      value: 3,
+      clampToRound: false,
+    });
+    const outcome = predictionEntryOutcome({
+      value: 3,
+      playerIndex: lastIndex,
+      totalPlayers: 3,
+      forbiddenValue: null,
+    });
+    const turnOverlay = predictionOverlayTransition({
+      current: undefined,
+      outcome,
+      playerIndex: lastIndex,
+      isFirstDigit: true,
+    });
+    const next = { ...saved, state: { ...saved.state, turnOverlay } };
+
+    expect(next.state.turnOverlay).toEqual({ kind: "play" });
+    // The prediction the player just entered is NOT lost.
+    expect(next.state.playerStates[lastIndex].points.predicted[0]).toBe(3);
   });
 });
 

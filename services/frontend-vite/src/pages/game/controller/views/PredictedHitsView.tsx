@@ -3,7 +3,12 @@ import { useState } from "react";
 import PlayerListItem from "@/components/PlayerListItem/PlayerListItem";
 import NumberPad from "@/components/NumberPad/NumberPad";
 import { forbiddenLastPrediction } from "@/api/utils";
-import { predictionEntryOutcome, setPrediction } from "@/game/loop";
+import type { EntryOutcome } from "@/game/loop";
+import {
+  predictionEntryOutcome,
+  predictionOverlayTransition,
+  setPrediction,
+} from "@/game/loop";
 
 export default function PredictedHitsView(props: {
   game: Game;
@@ -18,6 +23,7 @@ export default function PredictedHitsView(props: {
 
   const handleNumberClick = (number: string) => {
     if (currentValue.length < 2) {
+      const isFirstDigit = currentValue.length === 0;
       const newValue = currentValue + number;
       setCurrentValue(newValue);
 
@@ -31,34 +37,36 @@ export default function PredictedHitsView(props: {
         clampToRound: false,
       });
 
-      // The first player just entered their prediction — drop the "Stiche"
-      // (who-has-to-predict) overlay in the same update so it isn't clobbered by
-      // this save. Fires on the first digit for the first player only.
-      const isFirstPrediction =
-        currentPlayerIndex === 0 && currentValue.length === 0;
-      updateGame(
-        isFirstPrediction
-          ? { ...saved, state: { ...saved.state, turnOverlay: undefined } }
-          : saved,
-      );
+      const outcome = predictionEntryOutcome({
+        value,
+        playerIndex: currentPlayerIndex,
+        totalPlayers,
+        forbiddenValue,
+      });
+
+      // Fold the dashboard turn-overlay change into the SAME update as the save
+      // so it can't be clobbered by a follow-up updateGame built from stale
+      // state. `predictionOverlayTransition` owns the rules (hide "Stiche" on
+      // the first prediction, show "Am Zug" once the last one lands).
+      const turnOverlay = predictionOverlayTransition({
+        current: game.state.turnOverlay,
+        outcome,
+        playerIndex: currentPlayerIndex,
+        isFirstDigit,
+      });
+      updateGame({ ...saved, state: { ...saved.state, turnOverlay } });
 
       // Advance immediately on a single digit. Most predictions are one digit;
       // for the rare two-digit value, tap the player to re-select and type the
       // second digit (which appends since the field isn't cleared yet).
-      advanceFrom(value);
+      advanceFrom(outcome);
     }
   };
 
-  // Move to the next player, or finish the phase after the last one. `value` is
-  // the prediction just entered by the current (last) player, used to honor the
-  // "Darf nicht aufgehen" block. The decision itself lives in the game module.
-  const advanceFrom = (value: number) => {
-    const outcome = predictionEntryOutcome({
-      value,
-      playerIndex: currentPlayerIndex,
-      totalPlayers,
-      forbiddenValue,
-    });
+  // Move to the next player, or finish the phase after the last one, based on
+  // the already-computed entry outcome. The decision logic lives in the game
+  // module (`predictionEntryOutcome`); this only applies its result.
+  const advanceFrom = (outcome: EntryOutcome) => {
     if (outcome.kind === "blocked") return;
     if (outcome.kind === "finish") {
       onComplete?.();

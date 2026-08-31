@@ -367,6 +367,34 @@ export function predictionEntryOutcome(args: {
   return isLast ? { kind: "finish" } : { kind: "advance" };
 }
 
+// The dashboard turn overlay ("Stiche" = who predicts, "Am Zug" = who plays),
+// or `undefined` for no overlay.
+export type TurnOverlay = { kind: "predict" | "play" } | undefined;
+
+// Decide how the dashboard turn overlay should change when a prediction digit
+// is entered. This is the single source of truth for the auto-toggle rules, so
+// it can be unit-tested and can never drift into a wrong state:
+//   - First player's first digit  -> hide the "Stiche" overlay.
+//   - Last player's prediction lands (outcome "finish") -> show "Am Zug".
+//   - A blocked entry changes nothing (the prediction wasn't accepted).
+//   - Any other digit leaves the overlay exactly as it was.
+// `current` is passed through unchanged when no rule fires, so the caller can
+// always assign the result without special-casing.
+export function predictionOverlayTransition(args: {
+  current: TurnOverlay;
+  outcome: EntryOutcome;
+  playerIndex: number;
+  isFirstDigit: boolean;
+}): TurnOverlay {
+  const { current, outcome, playerIndex, isFirstDigit } = args;
+  if (outcome.kind === "blocked") return current;
+  // The last player's prediction was just accepted: the playing phase begins.
+  if (outcome.kind === "finish") return { kind: "play" };
+  // The very first prediction of the round: drop the who-predicts overlay.
+  if (playerIndex === 0 && isFirstDigit) return undefined;
+  return current;
+}
+
 // Decide the outcome after a tricks (actual) digit is entered.
 // - Always advances on the first digit — same, predictable behaviour as the
 //   prediction entry. A genuinely two-digit count (rounds >= 10) is entered by
