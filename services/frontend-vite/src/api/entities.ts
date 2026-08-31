@@ -40,6 +40,9 @@ export interface GameState {
   running: boolean;
   // On the final screen, show the points charts instead of the celebration gif.
   showCharts?: boolean;
+  // Mid-game: flip every player card around to reveal its per-player stats back
+  // side (averages, best/worst round, accuracy). Toggled from the controller.
+  showStats?: boolean;
   // Controls the full-screen turn overlay on the display. `kind` picks which
   // player is announced; the overlay stays visible until the controller toggles
   // it off (field cleared/undefined).

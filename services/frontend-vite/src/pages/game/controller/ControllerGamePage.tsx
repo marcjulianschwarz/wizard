@@ -20,6 +20,7 @@ import {
   Megaphone,
   Play,
   MonitorOff,
+  BarChart3,
 } from "lucide-react";
 
 // The ordered phases of a round. `first` steps only run before round 1.
@@ -81,6 +82,15 @@ export default function ControllerGamePage() {
         setupBlackout: show ? false : game.state.setupBlackout,
         fortuneWheel: show ? undefined : game.state.fortuneWheel,
       },
+    });
+  }
+
+  // Flip every dashboard card around to reveal per-player stats (and back).
+  function toggleStats() {
+    if (!game) return;
+    updateGame({
+      ...game,
+      state: { ...game.state, showStats: !game.state.showStats },
     });
   }
 
@@ -200,6 +210,14 @@ export default function ControllerGamePage() {
   // inline in the desktop column and inside the bottom sheet on mobile.
   const secondaryControls = (
     <>
+      <TurnToggle
+        active={!!game.state.showStats}
+        icon={<BarChart3 size={16} />}
+        onClick={toggleStats}
+      >
+        Statistiken
+      </TurnToggle>
+
       <div className="grid grid-cols-2 gap-2">
         <TurnToggle
           active={!!game.state.showWelcome}

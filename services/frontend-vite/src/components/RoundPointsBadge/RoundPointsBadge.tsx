@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
+import type { RoundPointsParts } from "@/api/utils";
 
 // Latest ref: read the freshest value inside a timer/effect without adding it
 // to the dependency array (which would re-run the effect on every jitter).
@@ -12,6 +13,9 @@ function useLatest<T>(value: T) {
 interface RoundPointsBadgeProps {
   // Points scored in the just-finished round, or null if unavailable.
   points: number | null;
+  // How that score was constructed (bonus + tricks, or the penalty), shown as
+  // small chips under the big number. Null when unavailable.
+  breakdown?: RoundPointsParts | null;
   // The round number the controller last confirmed as done. When this changes,
   // every card's badge pops together. Undefined = nothing to show.
   trigger?: number;
@@ -21,19 +25,23 @@ interface RoundPointsBadgeProps {
 // controller confirms the round ("Fertig"), then drifts up and fades.
 export default function RoundPointsBadge({
   points,
+  breakdown,
   trigger,
 }: RoundPointsBadgeProps) {
   // `shown` mounts the badge; `visible` drives its fade. We flip visible→false
   // to fade out, then unmount by clearing `shown`. Removal never relies on an
   // AnimatePresence exit completing (which the flood of socket re-renders was
   // interrupting, leaving the badge stuck on screen).
-  const [shown, setShown] = useState<{ value: number; key: number } | null>(
-    null,
-  );
+  const [shown, setShown] = useState<{
+    value: number;
+    parts: RoundPointsParts | null;
+    key: number;
+  } | null>(null);
   const [visible, setVisible] = useState(false);
   // Read the freshest points at the moment the trigger fires, without making
   // the effect depend on `points` (which jitters across socket updates).
   const latestPoints = useLatest(points);
+  const latestBreakdown = useLatest(breakdown ?? null);
 
   // Fire once per NEW trigger. Depending only on `trigger` means the effect
   // runs exactly when the round is confirmed — never on unrelated `points`
@@ -47,7 +55,7 @@ export default function RoundPointsBadge({
     const value = latestPoints.current;
     if (value === null) return;
 
-    setShown({ value, key: trigger });
+    setShown({ value, parts: latestBreakdown.current, key: trigger });
     setVisible(true);
     const fade = setTimeout(() => setVisible(false), 2100);
     const hide = setTimeout(() => setShown(null), 2500);
@@ -87,16 +95,55 @@ export default function RoundPointsBadge({
     >
       {/* Dark blurry blob for contrast against the chart behind it. */}
       <span className="absolute h-40 w-40 rounded-full bg-black/70 blur-2xl" />
-      <span
-        className={`text-7xl md:text-8xl font-black tabular-nums tracking-tight ${
-          gained
-            ? "text-green-400 drop-shadow-[0_0_30px_rgba(34,197,94,0.5)]"
-            : "text-red-400 drop-shadow-[0_0_30px_rgba(239,68,68,0.5)]"
-        }`}
-      >
-        {gained ? "+" : ""}
-        {shown.value}
-      </span>
+      <div className="relative flex flex-col items-center gap-1.5">
+        <span
+          className={`text-7xl md:text-8xl font-black tabular-nums tracking-tight ${
+            gained
+              ? "text-green-400 drop-shadow-[0_0_30px_rgba(34,197,94,0.5)]"
+              : "text-red-400 drop-shadow-[0_0_30px_rgba(239,68,68,0.5)]"
+          }`}
+        >
+          {gained ? "+" : ""}
+          {shown.value}
+        </span>
+        {/* How the score was constructed: the correct-guess bonus + the tricks
+            value, or the penalty for being off. */}
+        {shown.parts && <BreakdownChips parts={shown.parts} />}
+      </div>
     </motion.div>
+  );
+}
+
+// The two little pills under the big number that spell out how it was built:
+// on a correct guess, the flat +20 bonus and the +tricks value; on a miss, the
+// single penalty pill.
+function BreakdownChips({ parts }: { parts: RoundPointsParts }) {
+  const chip = (label: string, value: number, tone: "green" | "red") => (
+    <span
+      key={label}
+      className={`rounded-full px-3 py-1 text-sm md:text-base font-bold tabular-nums whitespace-nowrap ${
+        tone === "green"
+          ? "bg-green-500/20 text-green-300"
+          : "bg-red-500/20 text-red-300"
+      }`}
+    >
+      {value >= 0 ? "+" : ""}
+      {value} {label}
+    </span>
+  );
+
+  return (
+    <div className="flex items-center gap-2">
+      {parts.correct
+        ? [
+            chip("richtig", parts.bonus ?? 0, "green"),
+            chip("Stiche", parts.tricks ?? 0, "green"),
+          ]
+        : chip(
+            parts.off === 1 ? "Stich daneben" : "Stiche daneben",
+            parts.penalty ?? 0,
+            "red",
+          )}
+    </div>
   );
 }

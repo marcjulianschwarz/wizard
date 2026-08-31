@@ -17,9 +17,13 @@ interface SimpleLineChartProps {
   height?: number;
 }
 
-// Tooltip payload shape we care about (recharts types this loosely).
+// Tooltip payload shape we care about (recharts types this loosely). Each entry
+// carries the point's original datum, which holds the real round number in
+// `name` — recharts' own `label` is the data array index (0-based), which would
+// read as "Runde 0" for the first point.
 interface TooltipEntry {
   value: number;
+  payload?: { name: number };
 }
 
 // A single, labelled tooltip: "Runde: N" over "Punkte: V". Replaces the default
@@ -27,15 +31,15 @@ interface TooltipEntry {
 // once per series (the Area and Line share `dataKey="value"`).
 function ChartTooltip(props: {
   active?: boolean;
-  label?: number | string;
   payload?: TooltipEntry[];
 }) {
-  const { active, label, payload } = props;
+  const { active, payload } = props;
   if (!active || !payload || payload.length === 0) return null;
+  const round = payload[0].payload?.name;
   return (
     <div className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
       <div className="text-neutral-400">
-        Runde: <span className="font-semibold text-white">{label}</span>
+        Runde: <span className="font-semibold text-white">{round}</span>
       </div>
       <div className="text-neutral-400">
         Punkte:{" "}

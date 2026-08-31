@@ -90,6 +90,87 @@ export function roundPoints(
   return -Math.abs(predicted - actual) * 10;
 }
 
+// The parts a single round's score is built from, so the UI can show *how* the
+// number came to be (e.g. "+20 correct" and "+30 tricks", or "-40 off by 4").
+// Returns null when the round isn't fully scored yet.
+export interface RoundPointsParts {
+  total: number;
+  correct: boolean;
+  // Present when correct: the 20-point bonus and the tricks value (predicted*10).
+  bonus?: number;
+  tricks?: number;
+  // Present when wrong: how many tricks off, and the resulting penalty (<= 0).
+  off?: number;
+  penalty?: number;
+}
+
+export function roundPointsBreakdown(
+  playerState: PlayerState,
+  round: number,
+): RoundPointsParts | null {
+  const predicted = playerState.points.predicted[round - 1];
+  const actual = playerState.points.actual[round - 1];
+  if (predicted === undefined || actual === undefined) return null;
+  if (predicted === actual) {
+    return {
+      total: 20 + predicted * 10,
+      correct: true,
+      bonus: 20,
+      tricks: predicted * 10,
+    };
+  }
+  const off = Math.abs(predicted - actual);
+  return { total: -off * 10, correct: false, off, penalty: -off * 10 };
+}
+
+// Aggregate stats over all fully-scored rounds so far, for a single player.
+// Powers the "flip to stats" back side of each dashboard card. `perRound` holds
+// each round's point delta (in round order) so the back can draw a mini bar
+// chart; the scalar fields summarise it.
+export interface PlayerStats {
+  // Rounds that are fully scored (both predicted + actual present).
+  roundsPlayed: number;
+  // Per-round point deltas, in round order (positive = gained, negative = lost).
+  perRound: { round: number; delta: number; correct: boolean }[];
+  averagePerRound: number; // mean of perRound deltas (0 when none)
+  maxWon: number; // biggest single-round gain (0 when none positive)
+  maxLost: number; // biggest single-round loss, as a negative number (0 when none)
+  // How many rounds the prediction was exactly right, and the share of played
+  // rounds that were (0..1).
+  correctRounds: number;
+  accuracy: number;
+}
+
+export function playerStats(playerState: PlayerState): PlayerStats {
+  const predicted = playerState.points.predicted;
+  const actual = playerState.points.actual;
+  const rounds = Math.max(predicted.length, actual.length);
+
+  const perRound: PlayerStats["perRound"] = [];
+  for (let i = 0; i < rounds; i += 1) {
+    const parts = roundPointsBreakdown(playerState, i + 1);
+    if (parts === null) continue;
+    perRound.push({ round: i + 1, delta: parts.total, correct: parts.correct });
+  }
+
+  const roundsPlayed = perRound.length;
+  const deltas = perRound.map((r) => r.delta);
+  const sum = deltas.reduce((a, b) => a + b, 0);
+  const gains = deltas.filter((d) => d > 0);
+  const losses = deltas.filter((d) => d < 0);
+  const correctRounds = perRound.filter((r) => r.correct).length;
+
+  return {
+    roundsPlayed,
+    perRound,
+    averagePerRound: roundsPlayed ? Math.round(sum / roundsPlayed) : 0,
+    maxWon: gains.length ? Math.max(...gains) : 0,
+    maxLost: losses.length ? Math.min(...losses) : 0,
+    correctRounds,
+    accuracy: roundsPlayed ? correctRounds / roundsPlayed : 0,
+  };
+}
+
 export function lineChartPointsValues(
   playerState: PlayerState,
   currentRound: number,

@@ -6,11 +6,14 @@ import FortuneWheel from "@/components/FortuneWheel/FortuneWheel";
 import WizardWelcome from "@/components/WizardWelcome/WizardWelcome";
 import RoundPointsBadge from "@/components/RoundPointsBadge/RoundPointsBadge";
 import AnimatedScore from "@/components/AnimatedScore/AnimatedScore";
+import PlayerStatsCard from "@/components/PlayerStatsCard/PlayerStatsCard";
 import {
   currentPoints,
   lineChartPointsValues,
   forbiddenLastPrediction,
   roundPoints,
+  roundPointsBreakdown,
+  playerStats,
   rankTrends,
 } from "@/api/utils";
 import RoundTrend from "@/components/RoundTrend/RoundTrend";
@@ -63,6 +66,8 @@ function StatsBlock(props: {
   // and whether they are being warned or have actually picked it (blocked).
   forbiddenValue?: number | null;
   forbiddenState?: "warn" | "blocked" | null;
+  // When true, the card flips around to show this player's aggregate stats.
+  showStats?: boolean;
 }) {
   const {
     playerState,
@@ -77,6 +82,7 @@ function StatsBlock(props: {
     roundDelta = null,
     forbiddenValue,
     forbiddenState,
+    showStats = false,
   } = props;
 
   const isBlocked = forbiddenState === "blocked";
@@ -120,35 +126,75 @@ function StatsBlock(props: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roundResultTrigger]);
 
+  const stats = playerStats(playerState);
+
   return (
-    <motion.div
-      className={`relative h-full min-h-0 overflow-hidden p-4 border-2 rounded-xl ${
-        showForbidden
-          ? isBlocked
-            ? "border-red-500 shadow-[0_0_40px_-6px_rgba(239,68,68,0.7)]"
-            : "border-orange-500 shadow-[0_0_40px_-6px_rgba(249,115,22,0.6)]"
-          : style.card
-      }`}
-      // Celebrate a fresh #1 in place: a gold glow pulse + a little bounce.
-      animate={
-        celebrate
-          ? {
-              scale: [1, 1.035, 1],
-              boxShadow: [
-                "0 0 40px -3px rgba(234,179,8,0.55)",
-                "0 0 70px 4px rgba(234,179,8,0.95)",
-                "0 0 40px -3px rgba(234,179,8,0.55)",
-              ],
-            }
-          : {}
-      }
-      transition={{ duration: 1.1, ease: "easeOut" }}
-    >
+    <div className="h-full min-h-0" style={{ perspective: 1200 }}>
+      {/* Flip container: rotates 180° on Y when stats are toggled. Both faces
+          are stacked and back-face-hidden so only the forward one shows. */}
+      <motion.div
+        className="relative h-full min-h-0"
+        style={{ transformStyle: "preserve-3d" }}
+        animate={{ rotateY: showStats ? 180 : 0 }}
+        transition={{ type: "spring", stiffness: 260, damping: 30 }}
+      >
+        {/* BACK FACE: aggregate stats. Pre-rotated 180° so it reads correctly
+            once the container flips. */}
+        <div
+          className={`absolute inset-0 flex min-h-0 flex-col overflow-hidden rounded-xl border-2 p-4 ${style.card}`}
+          style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
+        >
+          <div className="relative z-10 mb-3 flex items-center gap-3">
+            <span className="text-3xl md:text-4xl leading-none">
+              {playerState.player.color}
+            </span>
+            <p className="m-0 truncate text-lg md:text-xl font-semibold text-white">
+              {playerState.player.name}
+            </p>
+          </div>
+          <div className="min-h-0 flex-1">
+            <PlayerStatsCard stats={stats} />
+          </div>
+        </div>
+
+        {/* FRONT FACE: the normal card. */}
+        <motion.div
+          className={`relative h-full min-h-0 overflow-hidden p-4 border-2 rounded-xl ${
+            showForbidden
+              ? isBlocked
+                ? "border-red-500 shadow-[0_0_40px_-6px_rgba(239,68,68,0.7)]"
+                : "border-orange-500 shadow-[0_0_40px_-6px_rgba(249,115,22,0.6)]"
+              : style.card
+          }`}
+          style={{ backfaceVisibility: "hidden" }}
+          // Celebrate a fresh #1 in place: a gold glow pulse + a little bounce.
+          // When it ends, animate the glow back to transparent — returning to
+          // `{}` would leave the last gold keyframe stuck inline, so a card that
+          // briefly led kept glowing after dropping in rank.
+          animate={
+            celebrate
+              ? {
+                  scale: [1, 1.035, 1],
+                  boxShadow: [
+                    "0 0 40px -3px rgba(234,179,8,0.55)",
+                    "0 0 70px 4px rgba(234,179,8,0.95)",
+                    "0 0 40px -3px rgba(234,179,8,0.55)",
+                  ],
+                }
+              : { scale: 1, boxShadow: "0 0 0 0 rgba(234,179,8,0)" }
+          }
+          transition={{ duration: 1.1, ease: "easeOut" }}
+        >
       {/* Floating "+50 / -20" that pops when this player's round score lands. */}
       <RoundPointsBadge
         points={
           roundResultTrigger !== undefined
             ? roundPoints(playerState, roundResultTrigger)
+            : null
+        }
+        breakdown={
+          roundResultTrigger !== undefined
+            ? roundPointsBreakdown(playerState, roundResultTrigger)
             : null
         }
         trigger={roundResultTrigger}
@@ -255,7 +301,9 @@ function StatsBlock(props: {
           height={chartHeight}
         />
       )}
-    </motion.div>
+        </motion.div>
+      </motion.div>
+    </div>
   );
 }
 
@@ -502,6 +550,18 @@ export default function DisplayGamePage() {
     );
   }
 
+  // The controller writes each player's actual count into game state live while
+  // typing, so the current round isn't "done" until it confirms via "Fertig"
+  // (roundResultTrigger catches up to currentRound). Rank by the score only up
+  // to the last confirmed round — otherwise the gold border jumps to the new
+  // leader the moment a trick count is typed, before anyone clicks Fertig.
+  const roundConfirmed =
+    game.state.roundResultTrigger !== undefined &&
+    game.state.roundResultTrigger >= game.state.currentRound;
+  const scoredUpTo = roundConfirmed
+    ? game.state.currentRound
+    : game.state.currentRound - 1;
+
   // Keep the cards in their fixed initial order. The controller rotates the
   // playerStates array every round for turn order, so we sort by the stable
   // `player.order` stamped at the initial ordering (falls back to array order
@@ -510,8 +570,8 @@ export default function DisplayGamePage() {
     .map((playerState, idx) => ({
       playerState,
       score: currentPoints(
-        playerState.points.predicted,
-        playerState.points.actual,
+        playerState.points.predicted.slice(0, scoredUpTo),
+        playerState.points.actual.slice(0, scoredUpTo),
       ),
       order: playerState.player.order ?? idx,
     }))
@@ -770,6 +830,7 @@ export default function DisplayGamePage() {
                   : null
               }
               chartHeight={boardChartHeight}
+              showStats={game.state.showStats ?? false}
               forbiddenValue={
                 playerState.player.name === lastPredictor?.player.name
                   ? forbiddenValue
