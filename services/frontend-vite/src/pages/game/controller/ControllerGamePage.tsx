@@ -54,6 +54,12 @@ export default function ControllerGamePage() {
 
   function handleNextPage() {
     if (currentPage < pages.length - 1) {
+      // Entering the playing phase ("Stiche" / made): auto-show the "Am Zug"
+      // overlay so the controller doesn't have to. They hide it manually once
+      // the round is under way.
+      if (STEPS[currentPage].key === "pred") {
+        setTurnOverlay({ kind: "play" });
+      }
       setCurrentPage((currentPage) => currentPage + 1);
     }
   }
@@ -63,6 +69,16 @@ export default function ControllerGamePage() {
     // Toggle off if this kind is already showing, otherwise show it.
     const next =
       game.state.turnOverlay?.kind === kind ? undefined : { kind };
+    updateGame({
+      ...game,
+      state: { ...game.state, turnOverlay: next },
+    });
+  }
+
+  // Force the dashboard turn overlay to a specific state, independent of what's
+  // currently showing. Used to auto-show "Am Zug" when the playing phase begins.
+  function setTurnOverlay(next: { kind: "predict" | "play" } | undefined) {
+    if (!game) return;
     updateGame({
       ...game,
       state: { ...game.state, turnOverlay: next },

@@ -23,14 +23,23 @@ export default function PredictedHitsView(props: {
 
       // Save immediately
       const value = parseInt(newValue);
+      const saved = setPrediction(game, {
+        playerName: game.state.playerStates[currentPlayerIndex].player.name,
+        value,
+        // Predictions aren't capped by the round number in this variant, so
+        // don't clamp — matches the live tricks entry and correction panel.
+        clampToRound: false,
+      });
+
+      // The first player just entered their prediction — drop the "Stiche"
+      // (who-has-to-predict) overlay in the same update so it isn't clobbered by
+      // this save. Fires on the first digit for the first player only.
+      const isFirstPrediction =
+        currentPlayerIndex === 0 && currentValue.length === 0;
       updateGame(
-        setPrediction(game, {
-          playerName: game.state.playerStates[currentPlayerIndex].player.name,
-          value,
-          // Predictions aren't capped by the round number in this variant, so
-          // don't clamp — matches the live tricks entry and correction panel.
-          clampToRound: false,
-        }),
+        isFirstPrediction
+          ? { ...saved, state: { ...saved.state, turnOverlay: undefined } }
+          : saved,
       );
 
       // Advance immediately on a single digit. Most predictions are one digit;
