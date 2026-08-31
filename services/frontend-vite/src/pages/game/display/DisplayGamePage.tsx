@@ -128,19 +128,6 @@ function StatsBlock(props: {
 
   const stats = playerStats(playerState);
 
-  // Swap the rendered face at the flip's midpoint (when the card is edge-on and
-  // invisible) rather than stacking both faces. Stacked back-face-hidden faces
-  // bleed through here because each face is `overflow-hidden`, which flattens
-  // the 3D context and disables backface culling — the mirrored front showed
-  // behind the stats. Rendering only one face at a time sidesteps that entirely.
-  const FLIP_MS = 500;
-  const [showStatsFace, setShowStatsFace] = useState(showStats);
-  useEffect(() => {
-    if (showStats === showStatsFace) return;
-    const timer = setTimeout(() => setShowStatsFace(showStats), FLIP_MS / 2);
-    return () => clearTimeout(timer);
-  }, [showStats, showStatsFace]);
-
   return (
     <motion.div
       className="h-full min-h-0"
@@ -152,8 +139,13 @@ function StatsBlock(props: {
       animate={celebrate ? { scale: [1, 1.035, 1] } : { scale: 1 }}
       transition={{ duration: 1.1, ease: "easeOut" }}
     >
-      {/* Flip container: rotates 180° on Y when stats are toggled. Only the
-          currently-forward face is mounted (swapped at the 90° midpoint). */}
+      {/* Flip container: rotates 180° on Y when stats are toggled. Both faces
+          stay mounted; `backface-visibility: hidden` hides whichever is turned
+          away. The critical detail: the face element that carries the rotation
+          + backface-hidden must NOT itself be `overflow-hidden` — that flattens
+          the 3D context and disables backface culling (which caused the
+          mirrored bleed-through). So each face is a bare positioned wrapper and
+          the visible, clipped card is a plain child inside it. */}
       <div
         className="relative h-full min-h-0 transition-transform duration-500 ease-out"
         style={{
@@ -162,12 +154,17 @@ function StatsBlock(props: {
         }}
       >
         {/* BACK FACE: aggregate stats. Pre-rotated 180° so it reads correctly
-            once the container has flipped. Only mounted once the flip passes its
-            midpoint, so the front can never show through from behind. */}
-        {showStatsFace ? (
+            once the container has flipped. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            transform: "rotateY(180deg)",
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+          }}
+        >
           <div
-            className={`absolute inset-0 flex min-h-0 flex-col overflow-hidden rounded-xl border-2 p-4 ${style.card}`}
-            style={{ transform: "rotateY(180deg)" }}
+            className={`flex h-full min-h-0 flex-col overflow-hidden rounded-xl border-2 p-4 ${style.card}`}
           >
             <div className="relative z-10 mb-3 flex items-center gap-3">
               <span className="text-3xl md:text-4xl leading-none">
@@ -178,12 +175,30 @@ function StatsBlock(props: {
               </p>
             </div>
             <div className="min-h-0 flex-1">
-              <PlayerStatsCard stats={stats} />
+              <PlayerStatsCard
+                stats={stats}
+                chart={
+                  <SimpleLineChart
+                    numbers={allNumbers}
+                    globalMax={globalMax}
+                    globalMin={globalMin}
+                    color={style.chart}
+                    height={Math.max(70, Math.floor(chartHeight * 0.55))}
+                  />
+                }
+              />
             </div>
           </div>
-        ) : (
-        /* FRONT FACE: the normal card. Only mounted while the flip is on the
-           front half of its arc. */
+        </div>
+
+        {/* FRONT FACE: the normal card. */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+          }}
+        >
         <div
           className={`relative h-full min-h-0 overflow-hidden p-4 border-2 rounded-xl ${
             showForbidden
@@ -325,7 +340,7 @@ function StatsBlock(props: {
         />
       )}
         </div>
-        )}
+        </div>
       </div>
     </motion.div>
   );

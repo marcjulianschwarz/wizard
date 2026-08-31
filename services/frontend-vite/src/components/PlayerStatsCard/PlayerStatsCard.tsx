@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { PlayerStats } from "@/api/utils";
 
 // One headline stat: a big value over a small label, colour-toned per metric.
@@ -73,7 +74,15 @@ function DeltaBars({ perRound }: { perRound: PlayerStats["perRound"] }) {
 }
 
 // The back side of a player card: their aggregate stats over the game so far.
-export default function PlayerStatsCard({ stats }: { stats: PlayerStats }) {
+// `chart` is the same points line chart shown on the front, placed between the
+// metrics and the per-round bars so the two round views line up visually.
+export default function PlayerStatsCard({
+  stats,
+  chart,
+}: {
+  stats: PlayerStats;
+  chart?: ReactNode;
+}) {
   const accuracyPct = Math.round(stats.accuracy * 100);
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
@@ -100,7 +109,11 @@ export default function PlayerStatsCard({ stats }: { stats: PlayerStats }) {
         />
       </div>
 
-      <div className="mt-auto">
+      {/* Points progression, same as the front — sits between the metrics and
+          the per-round bars so both round views share the same x-order. */}
+      {chart && <div className="min-h-0 flex-1">{chart}</div>}
+
+      <div className={chart ? "" : "mt-auto"}>
         <div className="mb-1 flex items-center justify-between text-[10px] md:text-xs uppercase tracking-wider text-neutral-500">
           <span>Rundenverlauf</span>
           <span className="tabular-nums">
