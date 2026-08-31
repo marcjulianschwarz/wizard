@@ -32,19 +32,11 @@ export default function ActualHitsView(props: {
         }),
       );
 
-      // Auto-advance once the value is complete. The module decides whether to
-      // wait for a possible second digit or move on (and never auto-finishes on
-      // the last player).
+      // Auto-advance on the first digit (never auto-finishes on the last
+      // player). A two-digit count is entered by re-selecting the player.
       const outcome = tricksEntryOutcome({
-        value,
-        digitsEntered: newValue.length,
         playerIndex: currentPlayerIndex,
         totalPlayers,
-        // This only decides whether to WAIT for a possible second digit — it is
-        // not a value cap (the stored value is unclamped above). Keep it at the
-        // round number so ordinary single-digit counts auto-advance; a genuinely
-        // two-digit count is entered by re-selecting the player and appending.
-        maxTricks: game.state.currentRound,
       });
       if (outcome.kind === "advance") {
         advanceFromCurrent();

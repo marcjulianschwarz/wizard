@@ -36,10 +36,13 @@ function ChartTooltip(props: {
   const { active, payload } = props;
   if (!active || !payload || payload.length === 0) return null;
   const round = payload[0].payload?.name;
+  // Index 0 is the pre-game anchor (0 points), so label it "Start" rather than
+  // "Runde 0".
+  const roundLabel = round === 0 ? "Start" : `Runde ${round}`;
   return (
     <div className="rounded-lg border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm">
       <div className="text-neutral-400">
-        Runde: <span className="font-semibold text-white">{round}</span>
+        <span className="font-semibold text-white">{roundLabel}</span>
       </div>
       <div className="text-neutral-400">
         Punkte:{" "}
@@ -59,11 +62,11 @@ const SimpleLineChart: React.FC<SimpleLineChartProps> = ({
   height = 300,
 }) => {
   // `numbers[i]` is the cumulative total after round `i`, so index 0 is the
-  // pre-game start (0 points). Drop it and label by the real round number so the
-  // x-axis starts at Runde 1 rather than a "Runde 0 = 0" point.
-  const data = numbers
-    .map((value, index) => ({ name: index, value }))
-    .slice(1);
+  // pre-game start (0 points). Keep it as an anchor so the line always spans
+  // from the game start to the latest round — otherwise round 1 has a single
+  // point and draws no line. `name` carries the real round number (0 = Start),
+  // which the tooltip labels correctly.
+  const data = numbers.map((value, index) => ({ name: index, value }));
   const gradientId = React.useId();
 
   // Pad the domain so the lowest/highest points don't hug the plot edges (the

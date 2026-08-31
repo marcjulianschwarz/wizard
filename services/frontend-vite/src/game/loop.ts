@@ -349,12 +349,6 @@ export type EntryOutcome =
   | { kind: "finish" } // last player done -> complete the phase
   | { kind: "blocked" }; // forbidden value: do nothing, keep field as-is
 
-// Whether typing another digit onto `value` could still form a valid count in
-// 0..maxTricks. Only then should the tricks entry wait for a second digit.
-function twoDigitReachable(value: number, maxTricks: number): boolean {
-  return value * 10 <= maxTricks;
-}
-
 // Decide the outcome after a prediction digit is entered.
 // - Advances on the first digit (most predictions are single-digit; a two-digit
 //   prediction is entered by re-selecting the player and appending).
@@ -374,20 +368,16 @@ export function predictionEntryOutcome(args: {
 }
 
 // Decide the outcome after a tricks (actual) digit is entered.
-// - Waits for a second digit only while a valid two-digit count is reachable and
-//   only one digit has been typed so far.
+// - Always advances on the first digit — same, predictable behaviour as the
+//   prediction entry. A genuinely two-digit count (rounds >= 10) is entered by
+//   re-selecting the player and typing the second digit (which appends).
 // - The last player never auto-finishes — the round is completed by a deliberate
 //   "Fertig" click, never by a keypress, so results aren't fired by accident.
 export function tricksEntryOutcome(args: {
-  value: number;
-  digitsEntered: number;
   playerIndex: number;
   totalPlayers: number;
-  maxTricks: number;
 }): EntryOutcome {
-  const { value, digitsEntered, playerIndex, totalPlayers, maxTricks } = args;
-  const canGrow = digitsEntered === 1 && twoDigitReachable(value, maxTricks);
-  if (canGrow) return { kind: "wait" };
+  const { playerIndex, totalPlayers } = args;
   const isLast = playerIndex === totalPlayers - 1;
   return isLast ? { kind: "wait" } : { kind: "advance" };
 }

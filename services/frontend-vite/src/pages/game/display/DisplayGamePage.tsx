@@ -128,6 +128,19 @@ function StatsBlock(props: {
 
   const stats = playerStats(playerState);
 
+  // Swap the rendered face at the flip's midpoint (when the card is edge-on and
+  // invisible) rather than stacking both faces. Stacked back-face-hidden faces
+  // bleed through here because each face is `overflow-hidden`, which flattens
+  // the 3D context and disables backface culling — the mirrored front showed
+  // behind the stats. Rendering only one face at a time sidesteps that entirely.
+  const FLIP_MS = 500;
+  const [showStatsFace, setShowStatsFace] = useState(showStats);
+  useEffect(() => {
+    if (showStats === showStatsFace) return;
+    const timer = setTimeout(() => setShowStatsFace(showStats), FLIP_MS / 2);
+    return () => clearTimeout(timer);
+  }, [showStats, showStatsFace]);
+
   return (
     <motion.div
       className="h-full min-h-0"
@@ -139,8 +152,8 @@ function StatsBlock(props: {
       animate={celebrate ? { scale: [1, 1.035, 1] } : { scale: 1 }}
       transition={{ duration: 1.1, ease: "easeOut" }}
     >
-      {/* Flip container: rotates 180° on Y when stats are toggled. Both faces
-          are stacked and back-face-hidden so only the forward one shows. */}
+      {/* Flip container: rotates 180° on Y when stats are toggled. Only the
+          currently-forward face is mounted (swapped at the 90° midpoint). */}
       <div
         className="relative h-full min-h-0 transition-transform duration-500 ease-out"
         style={{
@@ -149,29 +162,28 @@ function StatsBlock(props: {
         }}
       >
         {/* BACK FACE: aggregate stats. Pre-rotated 180° so it reads correctly
-            once the container flips. */}
-        <div
-          className={`absolute inset-0 flex min-h-0 flex-col overflow-hidden rounded-xl border-2 p-4 ${style.card}`}
-          style={{
-            transform: "rotateY(180deg)",
-            backfaceVisibility: "hidden",
-            WebkitBackfaceVisibility: "hidden",
-          }}
-        >
-          <div className="relative z-10 mb-3 flex items-center gap-3">
-            <span className="text-3xl md:text-4xl leading-none">
-              {playerState.player.color}
-            </span>
-            <p className="m-0 truncate text-lg md:text-xl font-semibold text-white">
-              {playerState.player.name}
-            </p>
+            once the container has flipped. Only mounted once the flip passes its
+            midpoint, so the front can never show through from behind. */}
+        {showStatsFace ? (
+          <div
+            className={`absolute inset-0 flex min-h-0 flex-col overflow-hidden rounded-xl border-2 p-4 ${style.card}`}
+            style={{ transform: "rotateY(180deg)" }}
+          >
+            <div className="relative z-10 mb-3 flex items-center gap-3">
+              <span className="text-3xl md:text-4xl leading-none">
+                {playerState.player.color}
+              </span>
+              <p className="m-0 truncate text-lg md:text-xl font-semibold text-white">
+                {playerState.player.name}
+              </p>
+            </div>
+            <div className="min-h-0 flex-1">
+              <PlayerStatsCard stats={stats} />
+            </div>
           </div>
-          <div className="min-h-0 flex-1">
-            <PlayerStatsCard stats={stats} />
-          </div>
-        </div>
-
-        {/* FRONT FACE: the normal card. */}
+        ) : (
+        /* FRONT FACE: the normal card. Only mounted while the flip is on the
+           front half of its arc. */
         <div
           className={`relative h-full min-h-0 overflow-hidden p-4 border-2 rounded-xl ${
             showForbidden
@@ -180,10 +192,6 @@ function StatsBlock(props: {
                 : "border-orange-500 shadow-[0_0_40px_-6px_rgba(249,115,22,0.6)]"
               : style.card
           }`}
-          style={{
-            backfaceVisibility: "hidden",
-            WebkitBackfaceVisibility: "hidden",
-          }}
         >
       {/* Gold glow pulse on taking the lead. A separate overlay so it never
           overrides the card's own (CSS) rank glow, which stays put for #1. */}
@@ -317,6 +325,7 @@ function StatsBlock(props: {
         />
       )}
         </div>
+        )}
       </div>
     </motion.div>
   );

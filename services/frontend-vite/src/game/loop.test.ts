@@ -468,53 +468,15 @@ describe("predictionEntryOutcome", () => {
 });
 
 describe("tricksEntryOutcome", () => {
-  it("waits for a second digit while a two-digit count is reachable", () => {
-    // round 15: value 1 could still become 10..15
+  it("advances on the first digit for a non-last player", () => {
     expect(
-      tricksEntryOutcome({
-        value: 1,
-        digitsEntered: 1,
-        playerIndex: 0,
-        totalPlayers: 3,
-        maxTricks: 15,
-      }),
-    ).toEqual({ kind: "wait" });
-  });
-
-  it("advances on the first digit when no two-digit count is reachable", () => {
-    // round 8: value 1 * 10 = 10 > 8, so no second digit possible
-    expect(
-      tricksEntryOutcome({
-        value: 1,
-        digitsEntered: 1,
-        playerIndex: 0,
-        totalPlayers: 3,
-        maxTricks: 8,
-      }),
-    ).toEqual({ kind: "advance" });
-  });
-
-  it("advances after a completed two-digit entry", () => {
-    expect(
-      tricksEntryOutcome({
-        value: 12,
-        digitsEntered: 2,
-        playerIndex: 0,
-        totalPlayers: 3,
-        maxTricks: 15,
-      }),
+      tricksEntryOutcome({ playerIndex: 0, totalPlayers: 3 }),
     ).toEqual({ kind: "advance" });
   });
 
   it("never auto-advances on the last player (waits for a deliberate Fertig)", () => {
     expect(
-      tricksEntryOutcome({
-        value: 0,
-        digitsEntered: 1,
-        playerIndex: 2,
-        totalPlayers: 3,
-        maxTricks: 8,
-      }),
+      tricksEntryOutcome({ playerIndex: 2, totalPlayers: 3 }),
     ).toEqual({ kind: "wait" });
   });
 });
