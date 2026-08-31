@@ -129,20 +129,34 @@ function StatsBlock(props: {
   const stats = playerStats(playerState);
 
   return (
-    <div className="h-full min-h-0" style={{ perspective: 1200 }}>
+    <motion.div
+      className="h-full min-h-0"
+      style={{ perspective: 1200 }}
+      // Celebrate a fresh #1 in place: a little bounce on the whole card. Scale
+      // lives on this outer (non-3D) wrapper so it never disturbs the flip
+      // container's `preserve-3d` (which would break backface culling and let
+      // the hidden face bleed through).
+      animate={celebrate ? { scale: [1, 1.035, 1] } : { scale: 1 }}
+      transition={{ duration: 1.1, ease: "easeOut" }}
+    >
       {/* Flip container: rotates 180° on Y when stats are toggled. Both faces
           are stacked and back-face-hidden so only the forward one shows. */}
-      <motion.div
-        className="relative h-full min-h-0"
-        style={{ transformStyle: "preserve-3d" }}
-        animate={{ rotateY: showStats ? 180 : 0 }}
-        transition={{ type: "spring", stiffness: 260, damping: 30 }}
+      <div
+        className="relative h-full min-h-0 transition-transform duration-500 ease-out"
+        style={{
+          transformStyle: "preserve-3d",
+          transform: showStats ? "rotateY(180deg)" : "rotateY(0deg)",
+        }}
       >
         {/* BACK FACE: aggregate stats. Pre-rotated 180° so it reads correctly
             once the container flips. */}
         <div
           className={`absolute inset-0 flex min-h-0 flex-col overflow-hidden rounded-xl border-2 p-4 ${style.card}`}
-          style={{ transform: "rotateY(180deg)", backfaceVisibility: "hidden" }}
+          style={{
+            transform: "rotateY(180deg)",
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+          }}
         >
           <div className="relative z-10 mb-3 flex items-center gap-3">
             <span className="text-3xl md:text-4xl leading-none">
@@ -158,7 +172,7 @@ function StatsBlock(props: {
         </div>
 
         {/* FRONT FACE: the normal card. */}
-        <motion.div
+        <div
           className={`relative h-full min-h-0 overflow-hidden p-4 border-2 rounded-xl ${
             showForbidden
               ? isBlocked
@@ -166,25 +180,26 @@ function StatsBlock(props: {
                 : "border-orange-500 shadow-[0_0_40px_-6px_rgba(249,115,22,0.6)]"
               : style.card
           }`}
-          style={{ backfaceVisibility: "hidden" }}
-          // Celebrate a fresh #1 in place: a gold glow pulse + a little bounce.
-          // When it ends, animate the glow back to transparent — returning to
-          // `{}` would leave the last gold keyframe stuck inline, so a card that
-          // briefly led kept glowing after dropping in rank.
-          animate={
-            celebrate
-              ? {
-                  scale: [1, 1.035, 1],
-                  boxShadow: [
-                    "0 0 40px -3px rgba(234,179,8,0.55)",
-                    "0 0 70px 4px rgba(234,179,8,0.95)",
-                    "0 0 40px -3px rgba(234,179,8,0.55)",
-                  ],
-                }
-              : { scale: 1, boxShadow: "0 0 0 0 rgba(234,179,8,0)" }
-          }
-          transition={{ duration: 1.1, ease: "easeOut" }}
+          style={{
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+          }}
         >
+      {/* Gold glow pulse on taking the lead. A separate overlay so it never
+          overrides the card's own (CSS) rank glow, which stays put for #1. */}
+      <AnimatePresence>
+        {celebrate && (
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-0 rounded-xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0, 1, 0] }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.1, ease: "easeOut" }}
+            style={{ boxShadow: "0 0 70px 4px rgba(234,179,8,0.95)" }}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Floating "+50 / -20" that pops when this player's round score lands. */}
       <RoundPointsBadge
         points={
@@ -301,9 +316,9 @@ function StatsBlock(props: {
           height={chartHeight}
         />
       )}
-        </motion.div>
-      </motion.div>
-    </div>
+        </div>
+      </div>
+    </motion.div>
   );
 }
 
