@@ -47,6 +47,18 @@ const DEFAULT_RANK_STYLE = {
   chart: "#8884d8",
 };
 
+// Gold / silver / bronze — the same hex the line charts use for ranks 1–3, so
+// the final leaderboard's place numbers match their chart cards. Ranks past 3rd
+// fall back to a muted neutral.
+const RANK_MEDAL_COLOR: Record<number, string> = {
+  1: "#eab308",
+  2: "#9ca3af",
+  3: "#b45309",
+};
+const DEFAULT_MEDAL_COLOR = "#a3a3a3";
+const medalColor = (rank: number) =>
+  RANK_MEDAL_COLOR[rank] ?? DEFAULT_MEDAL_COLOR;
+
 function StatsBlock(props: {
   playerState: PlayerState;
   currentRound: number;
@@ -327,34 +339,74 @@ const CONFETTI_COLORS = [
   "#f97316",
 ];
 
-// Bursts confetti outward from the center of the given element (the winner's
-// name / avatar) on mount, then keeps a gentle stream going.
+// A firework burst centered on the given element (the winner's name / avatar):
+// three shells fired from that point, up-left, straight up and up-right. Within
+// a burst they go off in sequence with a short delay so it reads as a rolling
+// firework, and the sweep DIRECTION alternates every burst (left->right, then
+// right->left, then left->right, ...).
+const FIREWORK_SHELLS = [
+  { angle: 120, spread: 55 }, // up and to the left
+  { angle: 90, spread: 70 }, // straight up
+  { angle: 60, spread: 55 }, // up and to the right
+];
+const SHELL_DELAY_MS = 180;
+
 function useConfetti(anchorRef: React.RefObject<HTMLElement | null>) {
   useEffect(() => {
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    // Flips each burst so the sweep reverses: L->R, then R->L, then L->R, ...
+    let leftToRight = true;
+
     const fire = () => {
+      // Only animate while the tab is actually visible. Firing into a hidden
+      // background tab queues up bursts that all animate at once on return,
+      // which janks (or crashes) the page.
+      if (document.hidden) return;
       const el = anchorRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
       const origin = {
         x: (rect.left + rect.width / 2) / window.innerWidth,
-        y: (rect.top + rect.height * 1.5) / window.innerHeight,
+        y: (rect.top + rect.height / 2) / window.innerHeight,
       };
-      confetti({
-        particleCount: 80,
-        spread: 100,
-        startVelocity: 35,
-        origin,
-        colors: CONFETTI_COLORS,
+      // Left->right fires the shells in order; right->left reverses them.
+      const shells = leftToRight
+        ? FIREWORK_SHELLS
+        : [...FIREWORK_SHELLS].reverse();
+      leftToRight = !leftToRight;
+      shells.forEach((shell, i) => {
+        timers.push(
+          setTimeout(() => {
+            if (document.hidden) return;
+            confetti({
+              particleCount: 50,
+              spread: shell.spread,
+              startVelocity: 45,
+              angle: shell.angle,
+              origin,
+              colors: CONFETTI_COLORS,
+            });
+          }, i * SHELL_DELAY_MS),
+        );
       });
     };
 
+    // Fire on mount (if visible) and whenever the tab becomes visible again.
     fire();
     const interval = setInterval(fire, 2500);
-    return () => clearInterval(interval);
+    const onVisibility = () => {
+      if (!document.hidden) fire();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      clearInterval(interval);
+      timers.forEach(clearTimeout);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
   }, [anchorRef]);
 }
 
-function FinalPage(props: { game: Game }) {
+export function FinalPage(props: { game: Game }) {
   const { game } = props;
   const [currentTime, setCurrentTime] = useState(() => Date.now());
   const winnersRef = useRef<HTMLDivElement>(null);
@@ -402,9 +454,6 @@ function FinalPage(props: { game: Game }) {
       ? `${winners.map((w) => w.player.name).join(" & ")} haben gewonnen!`
       : `${winners[0].player.name} hat gewonnen!`;
 
-  const placeMedal = (idx: number) =>
-    ["🥇", "🥈", "🥉"][idx] ?? `${idx + 1}.`;
-
   // Shared scale so all opened charts line up.
   const allChartNumbers = ranked.flatMap(({ ps }) =>
     lineChartPointsValues(ps, game.state.currentRound),
@@ -417,36 +466,40 @@ function FinalPage(props: { game: Game }) {
   const rankForIndex = (idx: number) =>
     ranked.filter((r) => r.score > ranked[idx].score).length + 1;
 
-  // The charts grid is 2 columns. Shrink each chart so all rows fit the
-  // viewport without scrolling once we go past two rows (4 players).
+  // The charts grid is 2 columns. Size each chart to fill as much of the right
+  // half as fits without scrolling, growing to fill the viewport height.
   const chartRows = Math.ceil(ranked.length / 2);
   const CARD_CHROME = 130; // padding + name + points above the chart
-  const availableChartArea = 0.85 * window.innerHeight - chartRows * CARD_CHROME;
+  const availableChartArea = 0.9 * window.innerHeight - chartRows * CARD_CHROME;
   const finalChartHeight = Math.max(
-    120,
-    Math.min(300, Math.floor(availableChartArea / chartRows)),
+    140,
+    Math.min(420, Math.floor(availableChartArea / chartRows)),
   );
 
   return (
-    <div className="w-full min-h-screen p-5 md:p-8 flex flex-col lg:flex-row items-center lg:items-stretch justify-center gap-8 lg:gap-40">
-      {/* Left: winners + leaderboard */}
-      <div className="flex flex-col items-center gap-8 w-full min-w-0 lg:w-1/2 lg:max-w-xl lg:justify-center">
+    <div className="w-full min-h-screen p-5 md:p-8 lg:px-16 grid grid-cols-1 lg:grid-cols-2 items-center lg:items-stretch gap-8 lg:gap-16">
+      {/* Left column: winners + leaderboard, centered in its half so it keeps
+          margin on both sides. */}
+      <div className="flex flex-col items-center gap-8 min-w-0 lg:justify-center">
         <div className="relative flex flex-col items-center gap-5">
           {/* Soft glow behind the winners */}
-          <div className="pointer-events-none absolute -top-10 h-64 w-64 rounded-full bg-green-500/20 blur-3xl" />
+          <div className="pointer-events-none absolute -top-10 h-64 w-64 rounded-full bg-yellow-500/20 blur-3xl" />
           {winners.length > 0 && (
             <div ref={winnersRef} className="relative flex gap-4">
               {winners.map((w) => (
                 <span
                   key={w.player.name}
-                  className="text-6xl md:text-8xl leading-none mt-5 animate-bounce drop-shadow-[0_0_25px_rgba(34,197,94,0.6)]"
+                  className="text-6xl md:text-8xl leading-none mt-5 animate-bounce drop-shadow-[0_0_25px_rgba(234,179,8,0.6)]"
                 >
                   {w.player.color}
                 </span>
               ))}
             </div>
           )}
-          <h1 className="relative text-4xl md:text-6xl leading-normal py-1 text-center font-black tracking-tight text-shimmer m-0">
+          <h1
+            className="relative text-4xl md:text-6xl leading-normal py-1 text-center font-black tracking-tight m-0 drop-shadow-[0_0_25px_rgba(234,179,8,0.45)]"
+            style={{ color: medalColor(1) }}
+          >
             {winnerTitle}
           </h1>
           <p className="text-lg md:text-xl text-neutral-400 m-0 text-center">
@@ -455,42 +508,72 @@ function FinalPage(props: { game: Game }) {
         </div>
 
         <div className="flex flex-col gap-4 w-full max-w-lg">
-          {ranked.map(({ ps, score }, idx) => (
-            <div
-              key={ps.player.name}
-              className={`flex justify-between items-center p-4 md:p-5 border rounded-xl ${
-                score === topScore
-                  ? "border-green-500 bg-gradient-to-r from-green-500/15 to-neutral-900 shadow-[0_0_25px_-8px_rgba(34,197,94,0.6)]"
-                  : "border-neutral-800 bg-neutral-900"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl w-8 text-center leading-none tabular-nums text-neutral-400">
-                  {placeMedal(idx)}
-                </span>
-                <span className="text-2xl md:text-3xl leading-none">
-                  {ps.player.color}
-                </span>
-                <span className="text-lg md:text-xl font-medium text-white">
-                  {ps.player.name}
+          {ranked.map(({ ps, score }, idx) => {
+            const rank = rankForIndex(idx);
+            // The top three get bumped up a size and use their gold/silver/bronze
+            // colour on both the place number and the border/glow.
+            const isPodium = rank <= 3;
+            const color = medalColor(rank);
+            return (
+              <div
+                key={ps.player.name}
+                className={`flex justify-between items-center border rounded-xl ${
+                  isPodium ? "p-5 md:p-6" : "p-4 md:p-5"
+                }`}
+                style={
+                  isPodium
+                    ? {
+                        borderColor: color,
+                        boxShadow: `0 0 25px -8px ${color}`,
+                        background: `linear-gradient(to right, ${color}22, #171717)`,
+                      }
+                    : { borderColor: "#262626", background: "#171717" }
+                }
+              >
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`w-8 text-center leading-none font-black tabular-nums ${
+                      isPodium ? "text-3xl md:text-4xl" : "text-xl md:text-2xl"
+                    }`}
+                    style={{ color }}
+                  >
+                    {rank}
+                  </span>
+                  <span
+                    className={`leading-none ${
+                      isPodium ? "text-3xl md:text-4xl" : "text-2xl md:text-3xl"
+                    }`}
+                  >
+                    {ps.player.color}
+                  </span>
+                  <span
+                    className={`font-medium text-white ${
+                      isPodium ? "text-xl md:text-2xl" : "text-lg md:text-xl"
+                    }`}
+                  >
+                    {ps.player.name}
+                  </span>
+                </div>
+                <span
+                  className={`font-bold tabular-nums ${
+                    isPodium ? "text-2xl md:text-3xl" : "text-xl md:text-2xl"
+                  }`}
+                  style={{ color: isPodium ? color : "#e5e5e5" }}
+                >
+                  {score} pkt
                 </span>
               </div>
-              <span
-                className={`text-xl md:text-2xl font-bold tabular-nums ${
-                  score === topScore ? "text-green-400" : "text-neutral-200"
-                }`}
-              >
-                {score} pkt
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
-      {/* Right: celebration gif or points charts, toggled from the controller */}
-      <div className="flex items-center justify-center w-full min-w-0 lg:w-1/2 lg:h-auto">
+      {/* Right column: celebration gif or points charts, toggled from the
+          controller. This cell is exactly one grid track (half the row), so the
+          charts grid fills it edge-to-edge with no width cap or centering. */}
+      <div className="flex items-center justify-center min-w-0 lg:h-auto">
         {showCharts ? (
-          <div className="grid gap-4 w-full max-w-4xl p-4 grid-cols-1 sm:grid-cols-2">
+          <div className="grid gap-4 w-full grid-cols-1 sm:grid-cols-2">
             {ranked.map(({ ps }, idx) => (
               // The card uses a FlipCard whose faces are absolutely positioned,
               // so the cell needs an explicit height or the card collapses to
