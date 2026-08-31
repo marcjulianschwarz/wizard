@@ -7,6 +7,7 @@ import WizardWelcome from "@/components/WizardWelcome/WizardWelcome";
 import RoundPointsBadge from "@/components/RoundPointsBadge/RoundPointsBadge";
 import AnimatedScore from "@/components/AnimatedScore/AnimatedScore";
 import PlayerStatsCard from "@/components/PlayerStatsCard/PlayerStatsCard";
+import FlipCard from "@/components/FlipCard/FlipCard";
 import {
   currentPoints,
   lineChartPointsValues,
@@ -128,86 +129,18 @@ function StatsBlock(props: {
 
   const stats = playerStats(playerState);
 
-  return (
-    <motion.div
-      className="h-full min-h-0"
-      style={{ perspective: 1200 }}
-      // Celebrate a fresh #1 in place: a little bounce on the whole card. Scale
-      // lives on this outer (non-3D) wrapper so it never disturbs the flip
-      // container's `preserve-3d` (which would break backface culling and let
-      // the hidden face bleed through).
-      animate={celebrate ? { scale: [1, 1.035, 1] } : { scale: 1 }}
-      transition={{ duration: 1.1, ease: "easeOut" }}
+  // FRONT of the flip card: the normal live card (name, points, chart / big
+  // round number / forbidden state, plus the celebration overlays).
+  const frontFace = (
+    <div
+      className={`relative h-full min-h-0 overflow-hidden p-4 border-2 rounded-xl ${
+        showForbidden
+          ? isBlocked
+            ? "border-red-500 shadow-[0_0_40px_-6px_rgba(239,68,68,0.7)]"
+            : "border-orange-500 shadow-[0_0_40px_-6px_rgba(249,115,22,0.6)]"
+          : style.card
+      }`}
     >
-      {/* Flip container: rotates 180° on Y when stats are toggled. Both faces
-          stay mounted; `backface-visibility: hidden` hides whichever is turned
-          away. The critical detail: the face element that carries the rotation
-          + backface-hidden must NOT itself be `overflow-hidden` — that flattens
-          the 3D context and disables backface culling (which caused the
-          mirrored bleed-through). So each face is a bare positioned wrapper and
-          the visible, clipped card is a plain child inside it. */}
-      <div
-        className="relative h-full min-h-0 transition-transform duration-500 ease-out"
-        style={{
-          transformStyle: "preserve-3d",
-          transform: showStats ? "rotateY(180deg)" : "rotateY(0deg)",
-        }}
-      >
-        {/* BACK FACE: aggregate stats. Pre-rotated 180° so it reads correctly
-            once the container has flipped. */}
-        <div
-          className="absolute inset-0"
-          style={{
-            transform: "rotateY(180deg)",
-            backfaceVisibility: "hidden",
-            WebkitBackfaceVisibility: "hidden",
-          }}
-        >
-          <div
-            className={`flex h-full min-h-0 flex-col overflow-hidden rounded-xl border-2 p-4 ${style.card}`}
-          >
-            <div className="relative z-10 mb-3 flex items-center gap-3">
-              <span className="text-3xl md:text-4xl leading-none">
-                {playerState.player.color}
-              </span>
-              <p className="m-0 truncate text-lg md:text-xl font-semibold text-white">
-                {playerState.player.name}
-              </p>
-            </div>
-            <div className="min-h-0 flex-1">
-              <PlayerStatsCard
-                stats={stats}
-                chart={
-                  <SimpleLineChart
-                    numbers={allNumbers}
-                    globalMax={globalMax}
-                    globalMin={globalMin}
-                    color={style.chart}
-                    height={Math.max(70, Math.floor(chartHeight * 0.55))}
-                  />
-                }
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* FRONT FACE: the normal card. */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backfaceVisibility: "hidden",
-            WebkitBackfaceVisibility: "hidden",
-          }}
-        >
-        <div
-          className={`relative h-full min-h-0 overflow-hidden p-4 border-2 rounded-xl ${
-            showForbidden
-              ? isBlocked
-                ? "border-red-500 shadow-[0_0_40px_-6px_rgba(239,68,68,0.7)]"
-                : "border-orange-500 shadow-[0_0_40px_-6px_rgba(249,115,22,0.6)]"
-              : style.card
-          }`}
-        >
       {/* Gold glow pulse on taking the lead. A separate overlay so it never
           overrides the card's own (CSS) rank glow, which stays put for #1. */}
       <AnimatePresence>
@@ -339,9 +272,48 @@ function StatsBlock(props: {
           height={chartHeight}
         />
       )}
-        </div>
-        </div>
+    </div>
+  );
+
+  // BACK of the flip card: the player's aggregate stats for the game so far.
+  const backFace = (
+    <div
+      className={`flex h-full min-h-0 flex-col overflow-hidden rounded-xl border-2 p-4 ${style.card}`}
+    >
+      <div className="relative z-10 mb-3 flex items-center gap-3">
+        <span className="text-3xl md:text-4xl leading-none">
+          {playerState.player.color}
+        </span>
+        <p className="m-0 truncate text-lg md:text-xl font-semibold text-white">
+          {playerState.player.name}
+        </p>
       </div>
+      <div className="min-h-0 flex-1">
+        <PlayerStatsCard
+          stats={stats}
+          chart={
+            <SimpleLineChart
+              numbers={allNumbers}
+              globalMax={globalMax}
+              globalMin={globalMin}
+              color={style.chart}
+              height="100%"
+            />
+          }
+        />
+      </div>
+    </div>
+  );
+
+  return (
+    // Celebrate a fresh #1 with a little bounce. Scale lives on this outer
+    // wrapper, outside the flip's 3D scene, so it can't flatten it.
+    <motion.div
+      className="h-full min-h-0"
+      animate={celebrate ? { scale: [1, 1.035, 1] } : { scale: 1 }}
+      transition={{ duration: 1.1, ease: "easeOut" }}
+    >
+      <FlipCard flipped={showStats} front={frontFace} back={backFace} />
     </motion.div>
   );
 }

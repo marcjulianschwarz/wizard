@@ -14,7 +14,9 @@ interface SimpleLineChartProps {
   globalMin: number;
   globalMax: number;
   color?: string;
-  height?: number;
+  // A number sizes the chart to that many pixels; a "N%" string fills that share
+  // of the parent (which must itself have a resolved height), letting it flex.
+  height?: number | `${number}%`;
 }
 
 // Tooltip payload shape we care about (recharts types this loosely). Each entry

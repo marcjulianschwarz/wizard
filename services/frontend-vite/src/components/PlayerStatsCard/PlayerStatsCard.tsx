@@ -110,10 +110,14 @@ export default function PlayerStatsCard({
       </div>
 
       {/* Points progression, same as the front — sits between the metrics and
-          the per-round bars so both round views share the same x-order. */}
-      {chart && <div className="min-h-0 flex-1">{chart}</div>}
+          the per-round bars so both round views share the same x-order. It owns
+          the remaining vertical space (the chart sizes to its parent), while the
+          metrics and per-round bars keep their intrinsic height. */}
+      {chart && (
+        <div className="min-h-0 flex-1 overflow-hidden">{chart}</div>
+      )}
 
-      <div className={chart ? "" : "mt-auto"}>
+      <div className={`shrink-0 ${chart ? "" : "mt-auto"}`}>
         <div className="mb-1 flex items-center justify-between text-[10px] md:text-xs uppercase tracking-wider text-neutral-500">
           <span>Rundenverlauf</span>
           <span className="tabular-nums">
